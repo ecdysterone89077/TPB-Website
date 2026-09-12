@@ -12,8 +12,12 @@ jobs:
     environment: production
     steps:
       - name: Trigger aaPanel Webhook (production)
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          WEBHOOK_URL: ${{ secrets.AAPANEL_PRODUCTION_WEBHOOK_URL }}
         run: |
+          payload=$(jq -n --arg ref "$REF_NAME" '{event: "deploy", ref: $ref}')
           curl -fsSL -X POST \
             -H "Content-Type: application/json" \
-            -d '{"event":"deploy","ref":"${{ github.ref_name }}"}' \
-            "${{ secrets.AAPANEL_PRODUCTION_WEBHOOK_URL }}"
+            -d "$payload" \
+            "$WEBHOOK_URL"

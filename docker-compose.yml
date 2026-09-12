@@ -5,6 +5,12 @@ services:
     image: mysql:8.0
     container_name: tpb-mysql
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+      - /run/mysqld
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-tpb-root-dev-password}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-tpb}

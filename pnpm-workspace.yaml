@@ -2,3 +2,9 @@ packages:
   - "apps/*"
   - "packages/*"
   - "tools/*"
+
+# Supply-chain hardening (diberlakukan penuh mulai pnpm 10.16+/10.21+/10.26+;
+# pnpm 9 mengabaikannya dengan aman).
+minimumReleaseAge: 10080
+trustPolicy: no-downgrade
+blockExoticSubdeps: true

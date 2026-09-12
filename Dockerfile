@@ -29,5 +29,12 @@ COPY --from=build /repo/apps/api/dist ./dist
 COPY --from=build /repo/apps/api/prisma ./prisma
 COPY --from=build /repo/apps/api/package.json ./package.json
 
+# Run as non-root: node:22-alpine ships a 'node' user (uid 1000).
+# /data/uploads is pre-chowned so fresh named volumes inherit ownership.
+RUN chown -R node:node /app \
+ && mkdir -p /data/uploads && chown -R node:node /data/uploads
+ENV NPM_CONFIG_CACHE=/tmp/npm-cache
+USER node
+
 EXPOSE 3000
 CMD ["node", "dist/main.js"]
