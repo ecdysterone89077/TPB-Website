@@ -1,0 +1,17 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Trigger aaPanel Webhook (staging)
+        run: |
+          curl -fsSL -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"event":"deploy","ref":"${{ github.ref_name }}"}' \
+            "${{ secrets.AAPANEL_STAGING_WEBHOOK_URL }}"

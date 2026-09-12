@@ -1,0 +1,19 @@
+name: Deploy Production
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # GitHub Environment "production" = manual approval gate
+    environment: production
+    steps:
+      - name: Trigger aaPanel Webhook (production)
+        run: |
+          curl -fsSL -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"event":"deploy","ref":"${{ github.ref_name }}"}' \
+            "${{ secrets.AAPANEL_PRODUCTION_WEBHOOK_URL }}"
