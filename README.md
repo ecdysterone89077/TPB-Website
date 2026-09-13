@@ -179,6 +179,14 @@ PM2 file tidak memuat rahasia — hosting harus menyuntikkan variabel ini sebelu
 
 Jalankan `pnpm api:preflight` dengan environment yang sama sebelum restart produksi untuk memastikan konfigurasi valid. Simpan `MEDIA_DIR` di luar direktori rilis agar pembersihan rilis tidak menghapus file yang diunggah.
 
+### Frontend statis di Vercel (model hybrid, opsional)
+
+API NestJS + MySQL + upload file tidak cocok serverless — jika frontend dipisah ke Vercel sementara API tetap di VPS:
+
+- Import repo ke Vercel dengan Root Directory `./` (`vercel.json` di root mengatur build contracts+web dan output `apps/web/dist`, plus rewrite `/media/*` ke API).
+- Isi `VITE_API_URL` dengan URL API publik VPS berversi (contoh: `https://api.tpb.unupurwokerto.ac.id/v1`), lalu redeploy — nilai dibake saat build, bukan runtime.
+- Jangan deploy `apps/api` ke Vercel.
+
 ---
 
 ## Konfigurasi Peladen
@@ -224,6 +232,9 @@ Pastikan direktori `MEDIA_DIR`:
 1. Buka `/#admin` — selama tabel `users` (MySQL) kosong, form **Bootstrap Admin** muncul (sekali pakai; paritas gerbang "akun pertama" dari sistem lama).
 2. Login → dashboard penuh: **Dashboard, Konten Situs, Berita, PMB, Galeri & Media, Pelanggan, Pengguna, Audit Log**.
 3. **Konten Situs harus diisi dari dashboard** — situs publik menampilkan state "belum dikonfigurasi" sampai konten tersimpan di database. Tidak ada fallback/default content di kode (kebijakan: *tidak boleh ada data static inline / fallback / hardcode menempel di file code*).
+4. **Migrasi antar-environment via panel** — tombol Export JSON di Konten Situs mengunduh satu file berisi konten situs + berita + galeri + file media; Import JSON menimpa konten dan menambahkan berita/galeri/media ke database tujuan. Data mengalir antar-database saat runtime — tanpa seeder di repo.
+5. **Galeri & Media** — tiap item punya judul, jenis (gambar/video), kategori kustom, caption, tautan, dan thumbnail kustom. Menu Galeri di situs membuka popup lightbox (grid → putar langsung di tempat). Video YouTube memakai thumbnail otomatis; video Instagram memakai thumbnail yang diunggah manual (Instagram tidak menyediakan thumbnail publik).
+6. **Pencarian** — tombol Cari di menu mencari keyword di seluruh konten situs dan berita.
 
 ---
 
@@ -269,7 +280,7 @@ Service-role key **hanya** melalui variabel environment — tidak pernah masuk r
 │  │  · contracts build → lint → audit:env             │   │
 │  │  · prisma generate & validate                     │   │
 │  │  · MySQL wait (2 fasa) → migrate → unit tests     │   │
-│  │  · API smoke test → migration verify              │   │
+│  │  · API smoke test → verify migrasi (riwayat/skema) │   │
 │  │  · typecheck → build api → build web              │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                          │
