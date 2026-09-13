@@ -95,13 +95,16 @@ jobs:
           cat /tmp/tpb-api.log
           exit 1
 
-      - name: Verify migrations (SQL against schema)
+      - name: Verify migrations (history against schema)
         run: |
-          (cd apps/api && pnpm exec prisma migrate diff \
-            --from-empty \
+          mysql -h 127.0.0.1 -u root -ptpb-root-dev-password -e "DROP DATABASE IF EXISTS tpb_shadow; CREATE DATABASE tpb_shadow; GRANT ALL ON tpb_shadow.* TO 'tpb'@'%';"
+          cd apps/api && pnpm exec prisma migrate diff \
+            --from-migrations ./prisma/migrations \
             --to-schema-datamodel prisma/schema.prisma \
-            --script) > /tmp/expected-migration.sql
-          cmp --silent /tmp/expected-migration.sql apps/api/prisma/migrations/0_init/migration.sql
+            --shadow-database-url 'mysql://tpb:tpb-dev-password@localhost:3306/tpb_shadow' \
+            --script --exit-code
+        env:
+          DATABASE_URL: mysql://ci:***@localhost:3306/ci_validate
 
       - name: Typecheck
         run: pnpm -r typecheck
