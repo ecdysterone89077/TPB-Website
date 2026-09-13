@@ -36,7 +36,7 @@ export type Post = {
   author: string | null;
 };
 
-export type GalleryItem = { id: string; image: string; caption: string | null; link: string | null; kind: string; title: string | null; createdAt: string };
+export type GalleryItem = { id: string; image: string; caption: string | null; link: string | null; kind: string; title: string | null; category: string | null; createdAt: string };
 export type Stat = { id?: string; value: number; suffix: string; label: string };
 export type Subscriber = { id: string; email: string; subscribedAt: string };
 
@@ -160,6 +160,7 @@ export const GalleryInputSchema = z.object({
   link: z.string().max(2000).nullable().optional().refine((v) => !v || /^https?:\/\//.test(v) || v.startsWith("/"), { message: "URL tautan tidak valid" }),
   kind: z.enum(["image", "video"]).optional().default("image"),
   title: z.string().max(300).optional(),
+  category: z.string().trim().max(160).optional(),
 });
 
 export const StatsSchema = z.object({

@@ -196,7 +196,7 @@ export const api = {
     return request<{ gallery: GalleryItem[]; pagination: PaginationMeta }>(`/gallery${pageQuery(params)}`);
   },
 
-  async addGallery(input: { image: string; caption?: string; link?: string | null; kind?: "image" | "video"; title?: string }): Promise<GalleryItem> {
+  async addGallery(input: { image: string; caption?: string; link?: string | null; kind?: "image" | "video"; title?: string; category?: string }): Promise<GalleryItem> {
     const d = await request<{ item: GalleryItem }>(`/gallery`, jsonInit(input));
     return d.item;
   },

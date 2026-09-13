@@ -91,7 +91,7 @@ export class PublicController {
   async addGallery(@Body() body: unknown) {
     const input = parse(GalleryInputSchema, body);
     const item = await this.prisma.galleryItem.create({
-      data: { image: input.image, imageHash: createHash("sha256").update(input.image).digest("hex"), caption: input.caption, link: input.link ?? null, kind: input.kind ?? "image", title: input.title ?? null },
+      data: { image: input.image, imageHash: createHash("sha256").update(input.image).digest("hex"), caption: input.caption, link: input.link ?? null, kind: input.kind ?? "image", title: input.title ?? null, category: input.category?.trim() ? input.category.trim() : null },
     });
     return { item: { ...item, createdAt: item.createdAt.toISOString() } };
   }
