@@ -23,7 +23,10 @@
     "migration:import": "pnpm --filter @tpb/supabase-migration import",
     "migration:reconcile": "pnpm --filter @tpb/supabase-migration reconcile",
     "lint": "eslint .",
-    "audit:env": "pnpm --filter @tpb/env-audit check"
+    "audit:env": "pnpm --filter @tpb/env-audit check",
+    "check:fast": "pnpm -r typecheck && pnpm lint",
+    "check:task": "pnpm check:fast && pnpm --filter @tpb/api test -- --coverage --ci && pnpm --filter @tpb/web test -- --coverage",
+    "check:full": "pnpm check:task && pnpm audit:env && semgrep scan --config p/default --config p/owasp-top-ten apps packages tools --quiet && osv-scanner scan source -r ."
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
