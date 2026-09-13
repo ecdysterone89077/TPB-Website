@@ -14,12 +14,33 @@ export function youtubeId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+export function instagramEmbed(url: string): string | null {
+  const m = url.match(/instagram\.com\/(?:reel|p|tv)\/([A-Za-z0-9_-]+)/);
+  if (!m) return null;
+  const kind = url.includes("/reel/") ? "reel" : url.includes("/tv/") ? "tv" : "p";
+  return `https://www.instagram.com/${kind}/${m[1]}/embed`;
+}
+
+function VideoThumb({ item }: { item: GalleryItem }) {
+  const yt = youtubeId(item.image) || youtubeId(item.link || "");
+  const src = yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : item.image;
+  return <>
+    <img src={src} alt="" loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+    <span className="absolute inset-0 grid place-items-center"><span className="grid h-12 w-12 place-items-center rounded-full bg-gold text-lg text-midnight">▶</span></span>
+  </>;
+}
+
 function Viewer({ item }: { item: GalleryItem }) {
   if (item.kind === "video") {
     const id = youtubeId(item.image) || youtubeId(item.link || "");
     if (id)
       return <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
         <iframe src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`} title={item.title || item.caption || "Video"} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="h-full w-full" />
+      </div>;
+    const ig = instagramEmbed(item.image) || instagramEmbed(item.link || "");
+    if (ig)
+      return <div className="mx-auto aspect-[4/5] w-full max-w-md overflow-hidden rounded-2xl bg-black">
+        <iframe src={ig} title={item.title || item.caption || "Instagram"} allowTransparency allow="encrypted-media" className="h-full w-full border-0" />
       </div>;
   }
   return <img src={item.image} alt={item.caption || item.title || ""} className="max-h-[75vh] w-full rounded-2xl object-contain bg-black" />;
@@ -70,8 +91,7 @@ export function GalleryHost() {
       {items.length === 0 && <p className="rounded-2xl bg-white/10 p-8 text-center text-sm text-white/70">Belum ada item galeri.</p>}
       {mode === "grid" && items.length > 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {items.map((item, i) => <button key={item.id} onClick={() => { setIndex(i); setMode("view"); }} className="group relative aspect-square overflow-hidden rounded-xl bg-white/10" aria-label={item.title || item.caption || `Item ${i + 1}`}>
-          <img src={item.kind === "video" && youtubeId(item.image) ? `https://i.ytimg.com/vi/${youtubeId(item.image)}/hqdefault.jpg` : item.image} alt="" loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" />
-          {item.kind === "video" && <span className="absolute inset-0 grid place-items-center"><span className="grid h-12 w-12 place-items-center rounded-full bg-gold text-lg text-midnight">▶</span></span>}
+          {item.kind === "video" ? <VideoThumb item={item} /> : <img src={item.image} alt="" loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" />}
           {item.title && <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-5 text-left text-[11px] font-bold text-white">{item.title}</span>}
         </button>)}
       </div>}
