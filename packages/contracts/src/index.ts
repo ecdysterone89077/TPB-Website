@@ -16,103 +16,10 @@ export type PmbStatus = (typeof PmbStatus)[keyof typeof PmbStatus];
 export type NavChild = { label: string; href: string };
 export type NavItem = { label: string; href: string; children?: NavChild[] };
 
-/* ------------------------------------------------------------ site content */
+/* --------------------------------- site content (single source of truth) */
 
-export type SiteContent = {
-  navigation: NavItem[];
-  brand: { kicker: string; name: string; org: string; logoUrl: string };
-  pmbLink: string;
-  hero: {
-    badge: string;
-    line1: string;
-    highlight: string;
-    line2: string;
-    subtitle: string;
-    primaryLabel: string;
-    primaryHref: string;
-    secondaryLabel: string;
-    image: string;
-  };
-  marquee: string[];
-  stats: { value: number; suffix: string; label: string }[];
-  about: {
-    kicker: string;
-    title: string;
-    body: string;
-    sinceYear: string;
-    sinceNote: string;
-    image: string;
-    points: string[];
-  };
-  programs: {
-    kicker: string;
-    title: string;
-    cta: string;
-    cards: { tag: string; title: string; body: string; img: string; color: string }[];
-  };
-  research: {
-    kicker: string;
-    title: string;
-    body: string;
-    areas: { no: string; title: string; body: string }[];
-    metrics: { v: string; l: string }[];
-  };
-  community: {
-    kicker: string;
-    title: string;
-    body: string;
-    image: string;
-    items: string[];
-  };
-  studentLife: {
-    kicker: string;
-    title: string;
-    cta: string;
-    cards: { tag: string; title: string; body: string }[];
-  };
-  profil: {
-    sejarah: { kicker: string; title: string; intro: string; timeline: { year: string; text: string }[] };
-    visiMisi: { kicker: string; title: string; visi: string; misi: string[] };
-    struktur: { kicker: string; title: string; people: { role: string; name: string }[] };
-    sambutan: { kicker: string; title: string; image: string; quote: string; name: string; role: string };
-  };
-  akademik: {
-    kurikulum: { kicker: string; title: string; intro: string; sks: { v: string; l: string }[]; clusters: string[] };
-    kalender: { kicker: string; title: string; items: { d: string; e: string }[] };
-    dosen: { kicker: string; title: string; intro: string; people: { name: string; field: string }[] };
-    laboratorium: { kicker: string; title: string; labs: { name: string; desc: string }[] };
-  };
-  penelitian: {
-    publikasi: { kicker: string; title: string; pubs: { title: string; venue: string; year: string }[] };
-    jurnal: { kicker: string; title: string; intro: string; cards: { title: string; body: string; note: string }[] };
-    kolaborasi: { kicker: string; title: string; intro: string; partners: string[] };
-  };
-  pengabdian: {
-    programDesa: { kicker: string; title: string; desa: { name: string; body: string }[] };
-    kemitraan: { kicker: string; title: string; mitra: string[] };
-    kegiatan: { kicker: string; title: string; items: { t: string; d: string }[] };
-  };
-  kemahasiswaan: {
-    himpunan: { kicker: string; title: string; intro: string; divisi: string[] };
-    beasiswa: { kicker: string; title: string; items: { name: string; body: string }[] };
-    prestasi: { kicker: string; title: string; items: string[] };
-    alumni: { kicker: string; title: string; quote: string; name: string; role: string; stats: { v: string; l: string }[] };
-  };
-  news: { kicker: string; title: string };
-  cta: { title: string; body: string; primary: string; secondary: string; secondaryHref: string };
-  footer: {
-    newsletterTitle: string;
-    infoTitle: string;
-    quickLinksTitle: string;
-    galleryTitle: string;
-    submitLabel: string;
-    socials: { facebook: string; twitter: string; youtube: string; linkedin: string };
-    contact: { phone: string; email: string; address: string };
-    quickLinks: { label: string; href: string }[];
-    copyright: string;
-    tagline: string;
-  };
-};
+/* SiteContent selalu diturunkan dari SiteContentSchema di bawah.
+   Jangan tulis ulang manual — drift tipe vs validasi pernah terjadi di sini. */
 
 /* ------------------------------------------------------------ domain types */
 
@@ -285,7 +192,7 @@ export const SiteContentSchema = z.object({
   community: z.object({ kicker: z.string().max(300), title: z.string().max(500), body: z.string().max(5000), image: UrlOrPath, items: TextListSchema }),
   studentLife: z.object({ kicker: z.string().max(300), title: z.string().max(500), cta: z.string().max(160), cards: z.array(z.object({ tag: z.string().max(160), title: z.string().max(300), body: z.string().max(2000) })).max(50) }),
   profil: z.object({ sejarah: z.object({ kicker: z.string().max(300), title: z.string().max(500), intro: z.string().max(5000), timeline: z.array(z.object({ year: z.string().max(40), text: z.string().max(2000) })).max(100) }), visiMisi: z.object({ kicker: z.string().max(300), title: z.string().max(500), visi: z.string().max(3000), misi: TextListSchema }), struktur: z.object({ kicker: z.string().max(300), title: z.string().max(500), people: z.array(z.object({ role: z.string().max(200), name: z.string().max(200) })).max(100) }), sambutan: z.object({ kicker: z.string().max(300), title: z.string().max(500), image: UrlOrPath, quote: z.string().max(5000), name: z.string().max(200), role: z.string().max(200) }) }),
-  akademik: z.object({ kurikulum: z.object({ kicker: z.string().max(300), title: z.string().max(500), intro: z.string().max(5000), sks: z.array(MetricSchema).max(50), clusters: TextListSchema }), kalender: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: z.array(z.object({ d: z.string().max(100), e: z.string().max(2000) })).max(100) }), dosen: z.object({ kicker: z.string().max(300), title: z.string().max(500), intro: z.string().max(5000), people: z.array(z.object({ name: z.string().max(200), field: z.string().max(300) })).max(100) }), laboratorium: z.object({ kicker: z.string().max(300), title: z.string().max(500), labs: z.array(z.object({ name: z.string().max(300), desc: z.string().max(2000) })).max(100) }) }),
+  akademik: z.object({ kurikulum: z.object({ kicker: z.string().max(300), title: z.string().max(500), intro: z.string().max(5000), sks: z.array(MetricSchema).max(50), clusters: TextListSchema }), kalender: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: z.array(z.object({ d: z.string().max(100), e: z.string().max(2000) })).max(100) }), dosen: z.object({ kicker: z.string().max(300), title: z.string().max(500), intro: z.string().max(5000), people: z.array(z.object({ name: z.string().max(200), field: z.string().max(300), photo: UrlOrPath.optional() })).max(100) }), laboratorium: z.object({ kicker: z.string().max(300), title: z.string().max(500), labs: z.array(z.object({ name: z.string().max(300), desc: z.string().max(2000) })).max(100) }) }),
   penelitian: z.object({ publikasi: z.object({ kicker: z.string().max(300), title: z.string().max(500), pubs: z.array(z.object({ title: z.string().max(500), venue: z.string().max(300), year: z.string().max(40) })).max(100) }), jurnal: z.object({ kicker: z.string().max(300), title: z.string().max(500), intro: z.string().max(5000), cards: z.array(z.object({ title: z.string().max(500), body: z.string().max(3000), note: z.string().max(500) })).max(100) }), kolaborasi: z.object({ kicker: z.string().max(300), title: z.string().max(500), intro: z.string().max(5000), partners: TextListSchema }) }),
   pengabdian: z.object({ programDesa: z.object({ kicker: z.string().max(300), title: z.string().max(500), desa: z.array(z.object({ name: z.string().max(300), body: z.string().max(3000) })).max(100) }), kemitraan: z.object({ kicker: z.string().max(300), title: z.string().max(500), mitra: TextListSchema }), kegiatan: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: z.array(z.object({ t: z.string().max(100), d: z.string().max(3000) })).max(100) }) }),
   kemahasiswaan: z.object({ himpunan: z.object({ kicker: z.string().max(300), title: z.string().max(500), intro: z.string().max(5000), divisi: TextListSchema }), beasiswa: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: z.array(z.object({ name: z.string().max(300), body: z.string().max(3000) })).max(100) }), prestasi: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: TextListSchema }), alumni: z.object({ kicker: z.string().max(300), title: z.string().max(500), quote: z.string().max(5000), name: z.string().max(200), role: z.string().max(200), stats: z.array(MetricSchema).max(50) }) }),
@@ -294,6 +201,8 @@ export const SiteContentSchema = z.object({
   footer: z.object({ newsletterTitle: z.string().max(500), infoTitle: z.string().max(200), quickLinksTitle: z.string().max(200), galleryTitle: z.string().max(200), submitLabel: z.string().max(80), socials: z.object({ facebook: z.string().max(2000), twitter: z.string().max(2000), youtube: z.string().max(2000), linkedin: z.string().max(2000) }), contact: z.object({ phone: z.string().max(100), email: z.string().max(320), address: z.string().max(1000) }), quickLinks: z.array(z.object({ label: z.string().max(200), href: z.string().max(2000) })).max(100), copyright: z.string().max(500), tagline: z.string().max(500) }),
 });
 export type ValidatedSiteContent = z.infer<typeof SiteContentSchema>;
+
+export type SiteContent = ValidatedSiteContent;
 
 export const ContentSchema = z.object({ content: SiteContentSchema });
 
