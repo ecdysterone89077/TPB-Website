@@ -22,6 +22,7 @@ export function instagramEmbed(url: string): string | null {
 }
 
 export function videoThumbUrl(item: GalleryItem): string | null {
+  if (item.thumb) return item.thumb;
   const yt = youtubeId(item.image) || youtubeId(item.link || "");
   return yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : null;
 }

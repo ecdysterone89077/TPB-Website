@@ -118,6 +118,7 @@ model GalleryItem {
   kind      String   @default("image") @db.VarChar(20)
   title     String?  @db.VarChar(300)
   category  String?  @db.VarChar(160)
+  thumb     String?  @db.VarChar(2000)
   createdAt DateTime @default(now())
 
   @@map("gallery_items")
