@@ -1,0 +1,698 @@
+{
+  "navigation": [
+    {
+      "label": "Beranda",
+      "href": "/"
+    },
+    {
+      "label": "Profil",
+      "href": "/#profil",
+      "children": [
+        {
+          "label": "Sejarah",
+          "href": "/#sejarah"
+        },
+        {
+          "label": "Visi & Misi",
+          "href": "/#visi-misi"
+        },
+        {
+          "label": "Struktur",
+          "href": "/#struktur"
+        },
+        {
+          "label": "Sambutan",
+          "href": "/#sambutan"
+        }
+      ]
+    },
+    {
+      "label": "Akademik",
+      "href": "/#akademik",
+      "children": [
+        {
+          "label": "Kurikulum",
+          "href": "/#kurikulum"
+        },
+        {
+          "label": "Kalender",
+          "href": "/#kalender"
+        },
+        {
+          "label": "Dosen & Staf",
+          "href": "/#dosen"
+        },
+        {
+          "label": "Laboratorium",
+          "href": "/#laboratorium"
+        }
+      ]
+    },
+    {
+      "label": "Penelitian",
+      "href": "/#penelitian",
+      "children": [
+        {
+          "label": "Publikasi",
+          "href": "/#publikasi"
+        },
+        {
+          "label": "Jurnal",
+          "href": "/#jurnal"
+        },
+        {
+          "label": "Kolaborasi",
+          "href": "/#kolaborasi"
+        }
+      ]
+    },
+    {
+      "label": "Pengabdian",
+      "href": "/#pengabdian",
+      "children": [
+        {
+          "label": "Program Desa",
+          "href": "/#program-desa"
+        },
+        {
+          "label": "Kemitraan",
+          "href": "/#kemitraan"
+        },
+        {
+          "label": "Kegiatan",
+          "href": "/#kegiatan"
+        }
+      ]
+    },
+    {
+      "label": "Kemahasiswaan",
+      "href": "/#kemahasiswaan",
+      "children": [
+        {
+          "label": "Himpunan",
+          "href": "/#himpunan"
+        },
+        {
+          "label": "Beasiswa",
+          "href": "/#beasiswa"
+        },
+        {
+          "label": "Prestasi",
+          "href": "/#prestasi"
+        },
+        {
+          "label": "Alumni",
+          "href": "/#alumni"
+        }
+      ]
+    },
+    {
+      "label": "Berita",
+      "href": "/#berita"
+    }
+  ],
+  "brand": {
+    "kicker": "Program Studi",
+    "name": "Teknik Pertanian & Biosistem",
+    "org": "UNU Purwokerto",
+    "logoUrl": "/media/3febe025-5457-4261-a025-c868b537d399.png"
+  },
+  "pmbLink": "https://pmb.unupurwokerto.ac.id/",
+  "hero": {
+    "badge": "Terakreditasi · UNU Purwokerto",
+    "line1": "Selamat Datang",
+    "highlight": "Prodi Teknik",
+    "line2": "Pertanian & Biosistem",
+    "subtitle": "Menempa insan unggul yang memadukan rekayasa, teknologi hayati, dan kearifan agraris untuk pertanian berkelanjutan Indonesia.",
+    "primaryLabel": "Jelajahi Program",
+    "primaryHref": "#akademik",
+    "secondaryLabel": "Pendaftaran Mahasiswa",
+    "image": "https://images.unsplash.com/photo-1731349219592-60ca16964631?w=1920&h=1200&fit=crop&auto=format"
+  },
+  "marquee": [
+    "Rekayasa Pertanian",
+    "Teknologi Pascapanen",
+    "Sistem Irigasi Cerdas",
+    "Energi Terbarukan",
+    "Mekanisasi",
+    "Biosistem",
+    "Smart Farming"
+  ],
+  "stats": [
+    {
+      "value": 1200,
+      "suffix": "+",
+      "label": "Mahasiswa Aktif"
+    },
+    {
+      "value": 32,
+      "suffix": "",
+      "label": "Dosen & Peneliti"
+    },
+    {
+      "value": 87,
+      "suffix": "%",
+      "label": "Serapan Kerja < 6 Bulan"
+    },
+    {
+      "value": 45,
+      "suffix": "+",
+      "label": "Mitra Industri"
+    }
+  ],
+  "about": {
+    "kicker": "Tentang Prodi",
+    "title": "Rekayasa yang berakar pada bumi, tumbuh bersama teknologi.",
+    "body": "Program Studi Teknik Pertanian dan Biosistem UNU Purwokerto hadir untuk menjawab tantangan ketahanan pangan melalui pendekatan rekayasa terapan. Kami memadukan mekanisasi, teknologi biosistem, dan manajemen sumber daya alam dalam kurikulum yang adaptif.",
+    "sinceYear": "2016",
+    "sinceNote": "Berdiri & terus berkembang membina agroteknologi lokal.",
+    "image": "https://images.unsplash.com/photo-1728895604559-a4e16081504e?w=1200&h=1400&fit=crop&auto=format",
+    "points": [
+      "Kurikulum berbasis proyek & sertifikasi kompetensi",
+      "Laboratorium mekanisasi dan pascapanen modern",
+      "Kolaborasi riset dengan petani dan industri agro"
+    ]
+  },
+  "programs": {
+    "kicker": "Bidang Keahlian",
+    "title": "Tiga pilar keilmuan, satu tujuan berkelanjutan.",
+    "cta": "Konsultasi program studi",
+    "cards": [
+      {
+        "tag": "Teknik Pengelolaan Sumber Daya Air dan Lingkungan Pertanian",
+        "title": "Sistem Informasi Geografis Lanjut & Teknik Irigasi dan Drainase",
+        "body": "",
+        "img": "https://images.unsplash.com/photo-1505471768190-275e2ad7b3f9?w=800&h=1000&fit=crop&auto=format",
+        "color": "#D4A017"
+      },
+      {
+        "tag": "Bioenergi, Mekanisasi dan Sistem Informasi Manajemen Biosistem",
+        "title": "Hubungan Tanah dan Alat Pertanian; Teknologi Bioenergi & Mekantronika dan Robotika Pertanian",
+        "body": "",
+        "img": "https://images.unsplash.com/photo-1580982327559-c1202864eb05?w=1000&h=1000&fit=crop&auto=format",
+        "color": "#2D6A4F"
+      },
+      {
+        "tag": "Pengolahan Pangan dan Bangunan Pertanian Berbasis Biosistem",
+        "title": "Teknik Bioproses & Teknik Evaluasi Mutu Produk Pertanian",
+        "body": "",
+        "img": "https://images.unsplash.com/photo-1602989106211-81de671c23a9?w=1200&h=800&fit=crop&auto=format",
+        "color": "#1B2A4A"
+      }
+    ]
+  },
+  "research": {
+    "kicker": "Riset & Inovasi",
+    "title": "Roadmap penelitian yang menjawab tantangan agraris.",
+    "body": "Empat payung riset menjadi arah pengembangan ilmu dan pengabdian prodi, dikerjakan bersama mahasiswa, mitra industri, dan komunitas tani.",
+    "areas": [
+      {
+        "no": "R1",
+        "title": "Mekanisasi & Otomasi Pertanian",
+        "body": "Rekayasa alat-mesin, robotika lahan, dan otomasi proses budidaya untuk efisiensi tenaga kerja."
+      },
+      {
+        "no": "R2",
+        "title": "Teknologi Pascapanen & Pangan",
+        "body": "Pengeringan, penyimpanan, dan pengolahan hasil pertanian guna menekan susut dan menambah nilai."
+      },
+      {
+        "no": "R3",
+        "title": "Rekayasa Sumber Daya Air & Lahan",
+        "body": "Irigasi presisi, konservasi tanah-air, dan pemodelan lingkungan berbasis data."
+      },
+      {
+        "no": "R4",
+        "title": "Energi Terbarukan Agroindustri",
+        "body": "Bioenergi, biomassa, dan sistem energi bersih untuk kawasan pertanian."
+      }
+    ],
+    "metrics": [
+      {
+        "v": "120+",
+        "l": "Publikasi terindeks"
+      },
+      {
+        "v": "18",
+        "l": "Hibah riset aktif"
+      },
+      {
+        "v": "7",
+        "l": "Paten & HKI"
+      }
+    ]
+  },
+  "community": {
+    "kicker": "Pengabdian Masyarakat",
+    "title": "Ilmu yang turun ke masyarakat dan tumbuh di desa.",
+    "body": "Kami percaya rekayasa pertanian bermakna ketika sampai ke tangan petani. Dosen dan mahasiswa terlibat langsung dalam program pemberdayaan berbasis kebutuhan komunitas.",
+    "image": "https://images.unsplash.com/photo-1602989106211-81de671c23a9?w=1200&h=800&fit=crop&auto=format",
+    "items": [
+      "Pendampingan kelompok tani milenial & desa binaan",
+      "Transfer teknologi pascapanen ke UMKM agro",
+      "Pelatihan irigasi hemat air untuk petani lokal",
+      "Kemitraan riset terapan dengan industri agribisnis"
+    ]
+  },
+  "studentLife": {
+    "kicker": "Kehidupan Mahasiswa",
+    "title": "Tumbuh di kampus, berdampak di lapangan.",
+    "cta": "Gabung sebagai mahasiswa",
+    "cards": [
+      {
+        "tag": "Himpunan",
+        "title": "HIMATETA",
+        "body": "Organisasi mahasiswa yang menautkan minat, proyek, dan jejaring lintas angkatan."
+      },
+      {
+        "tag": "Beasiswa",
+        "title": "Ragam Beasiswa",
+        "body": "KIP-Kuliah, prestasi, dan beasiswa mitra industri untuk mahasiswa berprestasi."
+      },
+      {
+        "tag": "Prestasi",
+        "title": "Juara Nasional",
+        "body": "Kompetisi inovasi alsintan, PKM, dan lomba karya tulis tingkat nasional."
+      },
+      {
+        "tag": "Alumni",
+        "title": "Jejaring Alumni",
+        "body": "Terserap di industri agro, riset, wirausaha tani, dan instansi pemerintah."
+      }
+    ]
+  },
+  "profil": {
+    "sejarah": {
+      "kicker": "Profil · Sejarah",
+      "title": "Perjalanan kami sejak 2016.",
+      "intro": "Tumbuh dari semangat memajukan pertanian daerah menjadi prodi rekayasa yang diperhitungkan.",
+      "timeline": [
+        {
+          "year": "2016",
+          "text": "Prodi Teknik Pertanian & Biosistem resmi berdiri di UNU Purwokerto."
+        },
+        {
+          "year": "2018",
+          "text": "Pembukaan laboratorium mekanisasi dan pascapanen pertama."
+        },
+        {
+          "year": "2021",
+          "text": "Kerja sama riset dengan mitra industri agro dan kelompok tani."
+        },
+        {
+          "year": "2024",
+          "text": "Raih akreditasi serta lonjakan serapan alumni di sektor agro."
+        }
+      ]
+    },
+    "visiMisi": {
+      "kicker": "Profil · Visi & Misi",
+      "title": "Arah yang kami tuju.",
+      "visi": "Tahun 2042 menjadi Program Studi yang unggul di bidang keteknikan pertanian dan biosistem yang berkarakter Aswaja An-Nahdliyyah, berjiwa wirausaha, dan berwawasan global.",
+      "misi": [
+        "Menyelenggarakan pendidikan yang unggul di bidang keteknikan pertanian dan biosistem untuk menghasilkan lulusan berkarakter Aswaja An-Nahdliyah, berjiwa wirausaha dan berwawasan global.",
+        "Melaksanakan penelitian dan publikasi nasional dan internasional dalam bidang keteknikan pertanian dan biosistem.",
+        "Melakukan pengabdian kepada masyarakat berbasis riset dan teknologi tepat guna di bidang keteknikan pertanian dan biosistem.",
+        "Menjalin kerjasama dengan berbagai lembaga untuk pengembangan pendidikan, penelitian, dan pengabdian kepada masyarakat."
+      ]
+    },
+    "struktur": {
+      "kicker": "Profil · Struktur Organisasi",
+      "title": "Tim pengelola prodi.",
+      "people": [
+        {
+          "role": "Koordinator Program Studi",
+          "name": "Hanis Adila Lestari, S.TP., M.Sc."
+        },
+        {
+          "role": "Koordinator Minat Bioenergi, Mekanisasi dan Sistem Informasi Manajemen Biosistem",
+          "name": "Anri Kurniawan, S.TP., M.Sc."
+        },
+        {
+          "role": "Koordinator Minat Teknik Pengelolaan Sumber Daya Air dan Lingkungan Pertanian",
+          "name": "Luthfi Wahab"
+        },
+        {
+          "role": "Koordinator Minat Pengolahan Pangan dan Bangunan Pertanian Berbasis Biosistem",
+          "name": "Slamet Sulistiyadi"
+        },
+        {
+          "role": "Koordinator Riset",
+          "name": "Anri Kurniawan, S.TP., M.Sc."
+        }
+      ]
+    },
+    "sambutan": {
+      "kicker": "Profil · Sambutan Kaprodi",
+      "title": "Salam dari Ketua Program Studi.",
+      "image": "https://images.unsplash.com/photo-1733388972592-ec1da2ddc432?w=1200&h=800&fit=crop&auto=format",
+      "quote": "Selamat datang di keluarga besar Teknik Pertanian & Biosistem. Di sini, rekayasa bertemu bumi — kita belajar menumbuhkan solusi nyata bagi pertanian Indonesia.",
+      "name": "Hanis Adila Lestari, S.TP., M.Sc.",
+      "role": "Ketua Program Studi"
+    }
+  },
+  "akademik": {
+    "kurikulum": {
+      "kicker": "Akademik · Kurikulum",
+      "title": "Kurikulum berbasis proyek.",
+      "intro": "Dirancang mengikuti kebutuhan industri agro dengan porsi praktik yang besar dan sertifikasi kompetensi.",
+      "sks": [
+        {
+          "v": "144",
+          "l": "Total SKS"
+        },
+        {
+          "v": "8",
+          "l": "Semester"
+        },
+        {
+          "v": "40%",
+          "l": "Praktikum & Proyek"
+        }
+      ],
+      "clusters": [
+        "Dasar Rekayasa & Matematika Teknik",
+        "Alat & Mesin Pertanian (Alsintan)",
+        "Teknik Tanah & Air",
+        "Teknologi Pascapanen & Pangan",
+        "Energi & Biosistem",
+        "Kewirausahaan Agroindustri"
+      ]
+    },
+    "kalender": {
+      "kicker": "Akademik · Kalender Akademik",
+      "title": "Tanggal penting tahun akademik.",
+      "items": [
+        {
+          "d": "Agustus",
+          "e": "Awal perkuliahan semester gasal"
+        },
+        {
+          "d": "Oktober",
+          "e": "Ujian Tengah Semester (UTS)"
+        },
+        {
+          "d": "Januari",
+          "e": "Ujian Akhir Semester (UAS)"
+        },
+        {
+          "d": "Februari",
+          "e": "Awal perkuliahan semester genap"
+        },
+        {
+          "d": "Juli",
+          "e": "Kuliah Kerja Nyata & magang industri"
+        }
+      ]
+    },
+    "dosen": {
+      "kicker": "Akademik · Dosen & Staf",
+      "title": "Diampu oleh para ahli.",
+      "intro": "Dosen dengan latar riset dan pengalaman lapangan yang beragam.",
+      "people": [
+        {
+          "name": "Hanis Adila Lestari, S.TP., M.Sc.",
+          "field": "Teknologi Pascapanen",
+          "photo": "/media/bef42c89-f993-4515-95da-29ade470ff4a.jpg",
+          "details": [
+            "S1 Universitas Jendral Soedirman",
+            "S2 Universitas Gadjah Mada"
+          ]
+        },
+        {
+          "name": "Sintawati Dwi Hastuti",
+          "field": "Energi dan Elektrifikasi Biosistem"
+        },
+        {
+          "name": "Anri Kurniawan, S.TP., M.Sc.",
+          "field": "Alat dan Mesin Pertanian"
+        },
+        {
+          "name": "Ermanto Kurniawan, S.TP., M.Sc.",
+          "field": "Energi dan Mekanisasi Pertanian"
+        },
+        {
+          "name": "Luthfi Wahab, ",
+          "field": "Sistem Informasi Geografis"
+        },
+        {
+          "name": "Triat Adi Yuwono, ",
+          "field": ""
+        },
+        {
+          "name": "Dwi Sukowati, ",
+          "field": "Sistem Informasi Geografis"
+        },
+        {
+          "name": "Lady Its'nia, ",
+          "field": ""
+        },
+        {
+          "name": "Slamet Sulistiyadi, S.TP., M.Sc. ",
+          "field": ""
+        }
+      ]
+    },
+    "laboratorium": {
+      "kicker": "Akademik · Laboratorium",
+      "title": "Fasilitas praktik modern.",
+      "labs": [
+        {
+          "name": "Lab. Mekanisasi & Alsintan",
+          "desc": "Perancangan dan pengujian alat-mesin pertanian."
+        },
+        {
+          "name": "Lab. Pascapanen & Pangan",
+          "desc": "Pengeringan, penyimpanan, dan pengolahan hasil."
+        },
+        {
+          "name": "Lab. Tanah & Air",
+          "desc": "Analisis irigasi, hidrologi, dan konservasi lahan."
+        },
+        {
+          "name": "Lab. Energi & Biosistem",
+          "desc": "Bioenergi, biomassa, dan sistem energi bersih."
+        }
+      ]
+    }
+  },
+  "penelitian": {
+    "publikasi": {
+      "kicker": "Penelitian · Publikasi",
+      "title": "Karya ilmiah terbaru.",
+      "pubs": [
+        {
+          "title": "Rancang Bangun Alat Tanam Presisi Berbasis Sensor",
+          "venue": "Jurnal Keteknikan Pertanian",
+          "year": "2024"
+        },
+        {
+          "title": "Optimasi Pengeringan Padi dengan Energi Surya Hibrida",
+          "venue": "Prosiding Seminar Nasional Biosistem",
+          "year": "2023"
+        },
+        {
+          "title": "Model Irigasi Hemat Air untuk Lahan Tadah Hujan",
+          "venue": "Jurnal Teknik Sumber Daya Air",
+          "year": "2023"
+        },
+        {
+          "title": "Pemanfaatan Biomassa Sekam menjadi Bioenergi",
+          "venue": "Jurnal Energi Terbarukan",
+          "year": "2022"
+        }
+      ]
+    },
+    "jurnal": {
+      "kicker": "Penelitian · Jurnal",
+      "title": "Wadah publikasi prodi.",
+      "intro": "Prodi mengelola dan mendorong publikasi pada jurnal ilmiah bereputasi.",
+      "cards": [
+        {
+          "title": "Jurnal Rekayasa Biosistem",
+          "body": "Terbit dua kali setahun, memuat riset rekayasa pertanian dan biosistem. e-ISSN terindeks nasional.",
+          "note": "Terbit · April & Oktober"
+        },
+        {
+          "title": "Panduan Penulis",
+          "body": "Naskah mengikuti template IMRaD, disertai data pendukung dan pernyataan orisinalitas.",
+          "note": "Open Access · Peer Reviewed"
+        }
+      ]
+    },
+    "kolaborasi": {
+      "kicker": "Penelitian · Kolaborasi",
+      "title": "Bekerja bersama mitra.",
+      "intro": "Riset kami tumbuh melalui kemitraan lintas sektor.",
+      "partners": [
+        "Kelompok Tani Makmur",
+        "PT Agro Nusantara",
+        "BRIN",
+        "Dinas Pertanian Banyumas",
+        "Universitas Mitra",
+        "Startup AgriTech"
+      ]
+    }
+  },
+  "pengabdian": {
+    "programDesa": {
+      "kicker": "Pengabdian · Program Desa",
+      "title": "Desa binaan kami.",
+      "desa": [
+        {
+          "name": "Desa Karangklesem",
+          "body": "Pendampingan mekanisasi tanam dan panen padi."
+        },
+        {
+          "name": "Desa Windusara",
+          "body": "Pelatihan pengolahan pascapanen untuk UMKM."
+        },
+        {
+          "name": "Desa Ledug",
+          "body": "Instalasi sistem irigasi hemat air percontohan."
+        }
+      ]
+    },
+    "kemitraan": {
+      "kicker": "Pengabdian · Kemitraan",
+      "title": "Jejaring pemberdayaan.",
+      "mitra": [
+        "Pemerintah Desa",
+        "Kelompok Tani",
+        "Karang Taruna",
+        "Dinas Pertanian",
+        "BUMDes",
+        "Koperasi Tani"
+      ]
+    },
+    "kegiatan": {
+      "kicker": "Pengabdian · Kegiatan",
+      "title": "Ragam kegiatan.",
+      "items": [
+        {
+          "t": "Sekolah Lapang Petani",
+          "d": "Kelas transfer teknologi bagi petani muda."
+        },
+        {
+          "t": "Demo Alsintan",
+          "d": "Peragaan alat-mesin hasil rekayasa mahasiswa."
+        },
+        {
+          "t": "Bakti Tani",
+          "d": "Aksi turun ke lahan bersama komunitas desa."
+        }
+      ]
+    }
+  },
+  "kemahasiswaan": {
+    "himpunan": {
+      "kicker": "Kemahasiswaan · Himpunan",
+      "title": "HIMATETA",
+      "intro": "Himpunan Mahasiswa Teknik Pertanian & Biosistem menaungi minat dan proyek mahasiswa lintas angkatan.",
+      "divisi": [
+        "Riset & Keilmuan",
+        "Kewirausahaan",
+        "Pengabdian Masyarakat",
+        "Media & Kreatif"
+      ]
+    },
+    "beasiswa": {
+      "kicker": "Kemahasiswaan · Beasiswa",
+      "title": "Dukungan biaya studi.",
+      "items": [
+        {
+          "name": "KIP-Kuliah",
+          "body": "Bantuan biaya pendidikan bagi mahasiswa kurang mampu berprestasi."
+        },
+        {
+          "name": "Beasiswa Prestasi",
+          "body": "Apresiasi bagi mahasiswa dengan capaian akademik & lomba."
+        },
+        {
+          "name": "Beasiswa Mitra Industri",
+          "body": "Pendanaan dan magang dari mitra industri agro."
+        }
+      ]
+    },
+    "prestasi": {
+      "kicker": "Kemahasiswaan · Prestasi",
+      "title": "Torehan membanggakan.",
+      "items": [
+        "Juara 1 Lomba Inovasi Alsintan Nasional 2024",
+        "Finalis PIMNAS bidang PKM-Karsa Cipta 2023",
+        "Juara 2 Karya Tulis Ilmiah Pertanian 2023",
+        "Best Paper Seminar Nasional Biosistem 2022"
+      ]
+    },
+    "alumni": {
+      "kicker": "Kemahasiswaan · Alumni",
+      "title": "Berkiprah di berbagai sektor.",
+      "quote": "Ilmu rekayasa yang saya pelajari langsung terpakai saat membangun usaha pengolahan hasil tani. Prodi membekali saya berpikir sistem, bukan sekadar teori.",
+      "name": "Alumni Angkatan 2019",
+      "role": "Wirausaha Agroindustri",
+      "stats": [
+        {
+          "v": "98%",
+          "l": "Terserap kerja"
+        },
+        {
+          "v": "30+",
+          "l": "Perusahaan agro"
+        },
+        {
+          "v": "15+",
+          "l": "Wirausaha tani"
+        }
+      ]
+    }
+  },
+  "news": {
+    "kicker": "Kabar Terbaru",
+    "title": "Berita & Kegiatan"
+  },
+  "cta": {
+    "title": "Siap menjadi insinyur pertanian masa depan?",
+    "body": "Bergabunglah dengan generasi yang membangun ketahanan pangan lewat rekayasa dan teknologi biosistem.",
+    "primary": "Daftar Sekarang",
+    "secondary": "Pelajari Program",
+    "secondaryHref": "#akademik"
+  },
+  "footer": {
+    "newsletterTitle": "Ikuti Perkembangan Kami",
+    "infoTitle": "Informasi Kontak",
+    "quickLinksTitle": "Tautan Cepat",
+    "galleryTitle": "Galeri Kami",
+    "submitLabel": "Langganan",
+    "socials": {
+      "facebook": "https://www.facebook.com/",
+      "twitter": "https://twitter.com/",
+      "youtube": "https://www.youtube.com/",
+      "linkedin": "https://www.linkedin.com/"
+    },
+    "contact": {
+      "phone": "+62 815-4285-4777",
+      "email": "tpb@unupurwokerto.ac.id",
+      "address": "Jl. Sultan Agung No.42, Windusara, Karangklesem, Kec. Purwokerto Sel., Kab. Banyumas, Jawa Tengah 53145."
+    },
+    "quickLinks": [
+      {
+        "label": "Profil Prodi",
+        "href": "#profil"
+      },
+      {
+        "label": "Kurikulum",
+        "href": "#akademik"
+      },
+      {
+        "label": "Penelitian",
+        "href": "#penelitian"
+      },
+      {
+        "label": "Beasiswa",
+        "href": "#kemahasiswaan"
+      }
+    ],
+    "copyright": "© 2026 Prodi Teknik Pertanian & Biosistem UNU Purwokerto. All Rights Reserved.",
+    "tagline": "Merekayasa · Menghijaukan · Memberdayakan"
+  }
+}
