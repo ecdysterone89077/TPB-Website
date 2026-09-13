@@ -36,7 +36,7 @@ export type Post = {
   author: string | null;
 };
 
-export type GalleryItem = { id: string; image: string; caption: string | null; link: string | null; createdAt: string };
+export type GalleryItem = { id: string; image: string; caption: string | null; link: string | null; kind: string; title: string | null; createdAt: string };
 export type Stat = { id?: string; value: number; suffix: string; label: string };
 export type Subscriber = { id: string; email: string; subscribedAt: string };
 
@@ -158,6 +158,8 @@ export const GalleryInputSchema = z.object({
   image: z.string().min(1).max(2000),
   caption: z.string().max(500).optional(),
   link: z.string().max(2000).nullable().optional().refine((v) => !v || /^https?:\/\//.test(v) || v.startsWith("/"), { message: "URL tautan tidak valid" }),
+  kind: z.enum(["image", "video"]).optional().default("image"),
+  title: z.string().max(300).optional(),
 });
 
 export const StatsSchema = z.object({
@@ -197,7 +199,6 @@ export const SiteContentSchema = z.object({
   pengabdian: z.object({ programDesa: z.object({ kicker: z.string().max(300), title: z.string().max(500), desa: z.array(z.object({ name: z.string().max(300), body: z.string().max(3000) })).max(100) }), kemitraan: z.object({ kicker: z.string().max(300), title: z.string().max(500), mitra: TextListSchema }), kegiatan: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: z.array(z.object({ t: z.string().max(100), d: z.string().max(3000) })).max(100) }) }),
   kemahasiswaan: z.object({ himpunan: z.object({ kicker: z.string().max(300), title: z.string().max(500), intro: z.string().max(5000), divisi: TextListSchema }), beasiswa: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: z.array(z.object({ name: z.string().max(300), body: z.string().max(3000) })).max(100) }), prestasi: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: TextListSchema }), alumni: z.object({ kicker: z.string().max(300), title: z.string().max(500), quote: z.string().max(5000), name: z.string().max(200), role: z.string().max(200), stats: z.array(MetricSchema).max(50) }) }),
   news: KickerTitleSchema,
-  video: z.object({ kicker: z.string().max(300), title: z.string().max(500), subtitle: z.string().max(2000), youtubeId: z.string().regex(/^[A-Za-z0-9_-]{6,20}$/).max(20) }).optional(),
   cta: z.object({ title: z.string().max(500), body: z.string().max(3000), primary: z.string().max(160), secondary: z.string().max(160), secondaryHref: z.string().max(2000) }),
   footer: z.object({ newsletterTitle: z.string().max(500), infoTitle: z.string().max(200), quickLinksTitle: z.string().max(200), galleryTitle: z.string().max(200), submitLabel: z.string().max(80), socials: z.object({ facebook: z.string().max(2000), twitter: z.string().max(2000), youtube: z.string().max(2000), linkedin: z.string().max(2000) }), contact: z.object({ phone: z.string().max(100), email: z.string().max(320), address: z.string().max(1000) }), quickLinks: z.array(z.object({ label: z.string().max(200), href: z.string().max(2000) })).max(100), copyright: z.string().max(500), tagline: z.string().max(500) }),
 });

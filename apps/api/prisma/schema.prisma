@@ -115,6 +115,8 @@ model GalleryItem {
   imageHash String   @unique @db.VarChar(64)
   caption   String?  @db.VarChar(500)
   link      String?  @db.VarChar(2000)
+  kind      String   @default("image") @db.VarChar(20)
+  title     String?  @db.VarChar(300)
   createdAt DateTime @default(now())
 
   @@map("gallery_items")
