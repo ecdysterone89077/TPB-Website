@@ -38,6 +38,7 @@ function buildIndex(content: SiteContent): Entry[] {
   const p = content.profil;
   for (const t of p.sejarah.timeline) push(G_PROFIL, "Sejarah " + t.year, [t.year, t.text], "/#sejarah");
   push(G_PROFIL, "Visi & Misi", [p.visiMisi.visi, ...p.visiMisi.misi], "/#visi-misi");
+  if (p.visiMisi.tujuan && p.visiMisi.tujuan.length > 0) push(G_PROFIL, "Tujuan", [...p.visiMisi.tujuan], "/#visi-misi");
   for (const person of p.struktur.people)
     push(G_PROFIL, person.name, [person.role, person.name], "/#struktur");
   push(G_PROFIL, "Sambutan Kaprodi", [p.sambutan.quote, p.sambutan.name], "/#sambutan");
