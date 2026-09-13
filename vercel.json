@@ -1,5 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter @tpb/contracts build && pnpm --filter @tpb/web build",
+  "outputDirectory": "apps/web/dist",
   "rewrites": [
     {
       "source": "/media/:path*",
