@@ -21,11 +21,20 @@ export function instagramEmbed(url: string): string | null {
   return `https://www.instagram.com/${kind}/${m[1]}/embed`;
 }
 
-function VideoThumb({ item }: { item: GalleryItem }) {
+export function videoThumbUrl(item: GalleryItem): string | null {
   const yt = youtubeId(item.image) || youtubeId(item.link || "");
-  const src = yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : item.image;
+  return yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : null;
+}
+
+function VideoThumb({ item }: { item: GalleryItem }) {
+  const thumb = videoThumbUrl(item);
+  if (!thumb)
+    return <span className="grid h-full w-full place-items-center bg-gradient-to-br from-midnight via-leaf-600 to-midnight">
+      <span className="flex flex-col items-center gap-2 px-2 text-center"><span className="grid h-12 w-12 place-items-center rounded-full bg-gold text-lg text-midnight">▶</span>
+      {item.title && <span className="line-clamp-2 text-[11px] font-bold text-white">{item.title}</span>}</span>
+    </span>;
   return <>
-    <img src={src} alt="" loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+    <img src={thumb} alt="" loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" />
     <span className="absolute inset-0 grid place-items-center"><span className="grid h-12 w-12 place-items-center rounded-full bg-gold text-lg text-midnight">▶</span></span>
   </>;
 }
