@@ -121,6 +121,19 @@ async function main() {
   const contentOk = (contentData == null) === (contentRow.data == null);
   results.content = { expected: contentData == null ? 0 : 1, actual: contentRow?.data != null ? 1 : 0, status: contentOk ? "ok" : "mismatch" };
 
+  // modular: pecah content jadi site_modules (19 key) — idempoten
+  if (contentData != null && typeof contentData === "object") {
+    const modules = contentData as Record<string, unknown>;
+    for (const [key, value] of Object.entries(modules)) {
+      await prisma.siteModule.upsert({ where: { key }, create: { key, data: value as any }, update: { data: value as any } });
+    }
+    const moduleKeys = Object.keys(modules);
+    const moduleCount = moduleKeys.length ? await prisma.siteModule.count({ where: { key: { in: moduleKeys } } }) : 0;
+    results.siteModules = exactResult(moduleKeys.length, moduleCount);
+  } else {
+    results.siteModules = { expected: 0, actual: 0, status: "ok" };
+  }
+
   // stats: stored inside content JSON in the legacy system; also importable standalone
   const stats = readJson("stats.json");
   assertSource(manifest, "stats", stats);

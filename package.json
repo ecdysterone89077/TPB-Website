@@ -10,6 +10,9 @@
   "scripts": {
     "dev:web": "pnpm --filter @tpb/web dev",
     "dev:api": "pnpm --filter @tpb/api dev",
+    "dev:api:dist": "pnpm --filter @tpb/api build && node apps/api/dist/main.js",
+    "dev:all": "powershell -ExecutionPolicy Bypass -File ./start.ps1",
+    "dev:stop": "powershell -ExecutionPolicy Bypass -File ./stop.ps1",
     "dev:db": "docker compose up -d db",
     "prisma:generate": "pnpm --filter @tpb/api prisma:generate",
     "db:migrate": "pnpm --filter @tpb/api prisma:migrate",

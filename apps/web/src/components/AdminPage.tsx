@@ -10,7 +10,6 @@ import type {
   Post,
   Registration,
   Role,
-  SiteContent,
   Subscriber,
 } from "@tpb/contracts";
 
@@ -30,9 +29,33 @@ type PostForm = {
 
 const PAGE_SIZE = 50;
 
+type ContentModuleKey = "brand" | "navigation" | "hero" | "marquee" | "stats" | "about" | "programs" | "research" | "community" | "studentLife" | "profil" | "akademik" | "penelitian" | "pengabdian" | "kemahasiswaan" | "news" | "cta" | "footer" | "pmbLink" | "legacy";
+const CONTENT_MODULES: { key: ContentModuleKey; label: string; hint: string }[] = [
+  { key: "brand", label: "Branding (Logo)", hint: "kicker, name, org, logoUrl" },
+  { key: "navigation", label: "Navigasi", hint: "menu + dropdown (profil, akademik, dll.)" },
+  { key: "hero", label: "Hero (Home)", hint: "badge, line1/highlight/line2, subtitle, buttons, image" },
+  { key: "marquee", label: "Marquee", hint: "teks berjalan" },
+  { key: "stats", label: "Statistik", hint: "value, suffix, label" },
+  { key: "about", label: "Tentang Prodi", hint: "kicker, title, body, points" },
+  { key: "programs", label: "Pilar Keilmuan", hint: "cards" },
+  { key: "research", label: "Riset & Inovasi", hint: "areas, metrics" },
+  { key: "community", label: "Pengabdian Masyarakat", hint: "items" },
+  { key: "studentLife", label: "Kehidupan Mahasiswa", hint: "cards" },
+  { key: "profil", label: "Profil", hint: "sejarah, visiMisi, struktur, sambutan" },
+  { key: "akademik", label: "Akademik", hint: "kurikulum, kalender, dosen, lab" },
+  { key: "penelitian", label: "Penelitian", hint: "publikasi, jurnal, kolaborasi" },
+  { key: "pengabdian", label: "Pengabdian", hint: "programDesa, kemitraan, kegiatan" },
+  { key: "kemahasiswaan", label: "Kemahasiswaan", hint: "himpunan, beasiswa, prestasi, alumni" },
+  { key: "news", label: "Berita (Kicker)", hint: "kicker, title" },
+  { key: "cta", label: "CTA", hint: "title, body, primary/secondary" },
+  { key: "footer", label: "Footer", hint: "kontak, sosmed, quickLinks" },
+  { key: "pmbLink", label: "PMB Link", hint: "URL pendaftaran" },
+  { key: "legacy", label: "Legacy JSON (semua)", hint: "gabungan 19 modul — hanya untuk export" },
+];
+
 const NAV_ALL: { id: View; label: string; roles: Role[] }[] = [
   { id: "dashboard", label: "Dashboard", roles: ["ADMIN"] },
-  { id: "content", label: "Konten Situs", roles: ["ADMIN", "EDITOR"] },
+  { id: "content", label: "Konten Modular", roles: ["ADMIN", "EDITOR"] },
   { id: "posts", label: "Berita", roles: ["ADMIN", "EDITOR"] },
   { id: "pmb", label: "PMB", roles: ["ADMIN", "OPERATOR"] },
   { id: "gallery", label: "Galeri & Media", roles: ["ADMIN", "EDITOR", "OPERATOR"] },
@@ -117,20 +140,155 @@ function DashboardView() {
 }
 
 function ContentView({ user }: { user: RoleAwareUser }) {
-  const [content, setContent] = useState<SiteContent | null>(null); const [draft, setDraft] = useState(""); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState(""); const [notice, setNotice] = useState("");
-  const load = useCallback(async () => { setLoading(true); setError(""); setNotice(""); try { const next = await api.getContent(); setContent(next); setDraft(next == null ? "" : JSON.stringify(next, null, 2)); } catch (e: any) { setError(e?.message ?? "Gagal memuat konten."); } finally { setLoading(false); } }, []);
-  useEffect(() => { load(); }, [load]);
-  const save = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(""); setNotice(""); try { const parsed = JSON.parse(draft) as SiteContent; const saved = await api.saveContent(parsed); setContent(saved.content); setDraft(JSON.stringify(saved.content, null, 2)); setNotice("Konten tersimpan."); } catch (e: any) { setError(e instanceof SyntaxError ? "Format JSON tidak valid." : e?.message ?? "Gagal menyimpan konten."); } finally { setSaving(false); } };
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [selected, setSelected] = useState<ContentModuleKey>("brand");
+  const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const loadModule = useCallback(async (key: ContentModuleKey) => {
+    setLoading(true); setError(""); setNotice("");
+    try {
+      let data: unknown = null;
+      if (key === "brand") data = await api.getBrand();
+      else if (key === "navigation") data = await api.getNavigation();
+      else if (key === "hero") data = await api.getHero();
+      else if (key === "marquee") data = await api.getMarquee();
+      else if (key === "stats") data = await api.getContentStats();
+      else if (key === "about") data = await api.getAbout();
+      else if (key === "programs") data = await api.getPrograms();
+      else if (key === "research") data = await api.getResearch();
+      else if (key === "community") data = await api.getCommunity();
+      else if (key === "studentLife") data = await api.getStudentLife();
+      else if (key === "profil") data = await api.getProfil();
+      else if (key === "akademik") data = await api.getAkademik();
+      else if (key === "penelitian") data = await api.getPenelitian();
+      else if (key === "pengabdian") data = await api.getPengabdian();
+      else if (key === "kemahasiswaan") data = await api.getKemahasiswaan();
+      else if (key === "news") data = await api.getNews();
+      else if (key === "cta") data = await api.getCta();
+      else if (key === "footer") data = await api.getFooter();
+      else if (key === "pmbLink") data = await api.getPmbLink();
+      else if (key === "legacy") data = await api.getContent();
+      setDraft(data == null ? "" : JSON.stringify(data, null, 2));
+    } catch (e: any) { setError(e?.message ?? "Gagal memuat modul."); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadModule(selected); }, [selected, loadModule]);
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault(); setSaving(true); setError(""); setNotice("");
+    try {
+      const parsed = JSON.parse(draft);
+      if (selected === "brand") await api.saveBrand(parsed);
+      else if (selected === "navigation") await api.saveNavigation(parsed);
+      else if (selected === "hero") await api.saveHero(parsed);
+      else if (selected === "marquee") await api.saveMarquee(parsed);
+      else if (selected === "stats") await api.saveContentStats(parsed);
+      else if (selected === "about") await api.saveAbout(parsed);
+      else if (selected === "programs") await api.savePrograms(parsed);
+      else if (selected === "research") await api.saveResearch(parsed);
+      else if (selected === "community") await api.saveCommunity(parsed);
+      else if (selected === "studentLife") await api.saveStudentLife(parsed);
+      else if (selected === "profil") await api.saveProfil(parsed);
+      else if (selected === "akademik") await api.saveAkademik(parsed);
+      else if (selected === "penelitian") await api.savePenelitian(parsed);
+      else if (selected === "pengabdian") await api.savePengabdian(parsed);
+      else if (selected === "kemahasiswaan") await api.saveKemahasiswaan(parsed);
+      else if (selected === "news") await api.saveNews(parsed);
+      else if (selected === "cta") await api.saveCta(parsed);
+      else if (selected === "footer") await api.saveFooter(parsed);
+      else if (selected === "pmbLink") await api.savePmbLink(parsed);
+      else if (selected === "legacy") await api.saveContent(parsed);
+      setNotice(`Modul ${selected} tersimpan.`);
+      await loadModule(selected);
+    } catch (e: any) { setError(e instanceof SyntaxError ? "Format JSON tidak valid." : e?.message ?? "Gagal menyimpan."); }
+    finally { setSaving(false); }
+  };
+
   const stamp = () => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
-  const collectMediaPaths = (obj: unknown): string[] => { const found = new Set<string>(); const walk = (v: unknown): void => { if (typeof v === "string") { const m = v.match(/\/media\/[A-Za-z0-9._-]+/g); if (m) m.forEach((x) => found.add(x)); } else if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === "object") Object.values(v as Record<string, unknown>).forEach(walk); }; walk(obj); return [...found]; };
-  const blobToDataUrl = (b: Blob) => new Promise<string>((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result as string); fr.onerror = () => rej(new Error("read")); fr.readAsDataURL(b); });
-  const exportAll = async () => { setError(""); setNotice(""); try { const parsed = JSON.parse(draft) as SiteContent; const posts: Post[] = []; let off = 0; for (;;) { const r = await api.listAll({ limit: 100, offset: off }); posts.push(...r.posts); if (r.posts.length < 100) break; off += 100; } const gallery: GalleryItem[] = []; off = 0; for (;;) { const r = await api.listGallery({ limit: 100, offset: off }); gallery.push(...r.gallery); if (r.gallery.length < 100) break; off += 100; } const postInputs = posts.map((item) => ({ title: item.title, category: item.category, excerpt: item.excerpt, content: item.content, image: item.image, readTime: item.readTime, status: item.status, date: item.date })); const galleryInputs = gallery.map((item) => ({ image: item.image, caption: item.caption, link: item.link, kind: item.kind, title: item.title, category: item.category, thumb: item.thumb })); const media: Array<{ path: string; dataUrl: string }> = []; const mediaFail: string[] = []; for (const path of collectMediaPaths({ content: parsed, posts: postInputs, gallery: galleryInputs })) { try { const r = await fetch(path); if (!r.ok) throw new Error("http"); media.push({ path, dataUrl: await blobToDataUrl(await r.blob()) }); } catch { mediaFail.push(path); } } const bundle = { version: 2, exportedAt: new Date().toISOString(), content: parsed, posts: postInputs, gallery: galleryInputs, media }; const blob = new Blob([JSON.stringify(bundle)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `tpb-migrasi-${stamp()}.json`; a.click(); URL.revokeObjectURL(url); setNotice(`Diekspor: konten + ${posts.length} berita + ${gallery.length} galeri + ${media.length} file media.${mediaFail.length ? " Media gagal dibaca: " + mediaFail.join(", ") : ""}`); } catch { setError("Format JSON tidak valid — perbaiki dulu sebelum mengekspor."); } };
-  const importAll = async (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; setError(""); setNotice(""); try { const text = await file.text(); const raw = JSON.parse(text) as any; const bundle = raw && (raw.version === 1 || raw.version === 2) ? raw : { content: raw as SiteContent, posts: [] as any[], gallery: [] as any[], media: [] as any[] }; const posts = Array.isArray(bundle.posts) ? bundle.posts : []; const gallery = Array.isArray(bundle.gallery) ? bundle.gallery : []; const mediaArr = Array.isArray(bundle.media) ? bundle.media : []; if (!window.confirm(`Timpa konten situs dan TAMBAH ${posts.length} berita + ${gallery.length} galeri + ${mediaArr.length} file media dari "${file.name}"?`)) return; setSaving(true); const fails: string[] = []; const pathMap: Record<string, string> = {}; for (const m of mediaArr) { try { const parts = String(m.dataUrl).split(","); const mime = parts[0].match(/data:(.*?);/)?.[1] ?? "application/octet-stream"; const bin = atob(parts[1]); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); const name = String(m.path).split("/").pop() || "file"; const up = await api.uploadMedia(new File([bytes.buffer as ArrayBuffer], name, { type: mime })); pathMap[String(m.path)] = up.url; } catch { fails.push(`media: ${m?.path ?? "?"}`); } } let payload = JSON.stringify({ content: bundle.content, posts, gallery }); for (const [oldP, newP] of Object.entries(pathMap)) payload = payload.split(oldP).join(newP); const fixed = JSON.parse(payload) as { content: SiteContent; posts: any[]; gallery: any[] }; const saved = await api.saveContent(fixed.content); setContent(saved.content); setDraft(JSON.stringify(saved.content, null, 2)); let okP = 0; let okG = 0; for (const item of fixed.posts) { try { await api.create({ title: item.title, category: item.category, excerpt: item.excerpt ?? null, content: item.content ?? null, image: item.image ?? null, readTime: item.readTime ?? null, status: item.status === "published" ? "published" : "draft", date: item.date ?? undefined }); okP++; } catch { fails.push(`berita: ${item?.title ?? "?"}`); } } for (const item of fixed.gallery) { try { await api.addGallery({ image: item.image, caption: item.caption ?? undefined, link: item.link ?? null, kind: item.kind === "video" ? "video" : "image", title: item.title ?? undefined, category: item.category ?? undefined, thumb: item.thumb ?? null }); okG++; } catch { fails.push(`galeri: ${item?.title ?? item?.image ?? "?"}`); } } setNotice(`Diimpor: konten + ${okP}/${fixed.posts.length} berita + ${okG}/${fixed.gallery.length} galeri + ${Object.keys(pathMap).length}/${mediaArr.length} media.${fails.length ? " Gagal: " + fails.join("; ") : ""}`); } catch (e: any) { setError(e instanceof SyntaxError ? "File bukan JSON yang valid." : e?.message ?? "Gagal mengimpor konten."); } finally { setSaving(false); } };
+  const fileRef = useRef<HTMLInputElement>(null);
+  const importFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      let data: unknown = parsed;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && "content" in (parsed as any)) {
+        const c = (parsed as any).content;
+        if (selected === "legacy") data = c;
+        else if (c && typeof c === "object" && selected in c) data = (c as any)[selected];
+        else if (selected in (parsed as any)) data = (parsed as any)[selected];
+      } else if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && selected in (parsed as any) && selected !== "legacy") {
+        data = (parsed as any)[selected];
+      }
+      setDraft(JSON.stringify(data, null, 2));
+      setNotice(`File ${file.name} dimuat untuk ${selected} — klik Simpan.`);
+      setError("");
+    } catch (err: any) {
+      setError(err instanceof SyntaxError ? "File JSON tidak valid." : err?.message ?? "Gagal import.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+  const exportAll = async () => {
+    try {
+      const content = await api.getContent();
+      if (!content) { setError("Konten belum ada untuk diekspor."); return; }
+      const bundle = { version: 2, exportedAt: new Date().toISOString(), content };
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `tpb-modular-${stamp()}.json`; a.click(); URL.revokeObjectURL(url);
+      setNotice("Diekspor (modular).");
+    } catch (e: any) { setError(e?.message ?? "Gagal ekspor."); }
+  };
 
-  return <Section title="Konten Situs" action={<div className="flex gap-2"><button onClick={exportAll} className="button-secondary">Export JSON</button><button onClick={() => fileRef.current?.click()} className="button-secondary">Import JSON</button><button onClick={load} className="button-secondary">Muat ulang</button><input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={importAll} /></div>}><Notice error={error} success={notice} /><AsyncState loading={loading} error="" empty={!content}>{content && <form onSubmit={save} className="space-y-4"><Panel><p className="text-sm text-slate-500 mb-3">Editor JSON memakai data yang tersimpan di server. Export/Import memindahkan konten situs + berita + galeri + file media (/media/...) antar-database lewat panel ini — tanpa seeder di repo.</p><textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={30} className="admin-textarea font-mono text-xs" aria-label="JSON konten situs" /></Panel><div className="flex gap-2"><button disabled={saving || !roleCan(user, ["ADMIN"])} className="button-primary disabled:opacity-50">{saving ? "Menyimpan..." : "Simpan konten"}</button><button type="button" onClick={() => setDraft(JSON.stringify(content, null, 2))} className="button-secondary">Buang perubahan</button></div></form>}</AsyncState>{!loading && !error && !content && <Panel><p className="text-sm text-slate-500">Konten belum dikonfigurasi. Buat data konten melalui editor API sebelum menyimpannya.</p></Panel>}</Section>;
+  return (
+    <Section
+      title="Konten Modular"
+      action={
+        <div className="flex gap-2">
+          <input ref={fileRef} type="file" accept=".json,application/json" onChange={importFile} className="hidden" />
+          <button onClick={() => fileRef.current?.click()} className="button-secondary">Import JSON</button>
+          <button onClick={exportAll} className="button-secondary">Export JSON</button>
+          <button onClick={() => loadModule(selected)} className="button-secondary">Muat ulang</button>
+        </div>
+      }
+    >
+      <div className="mb-4 flex flex-wrap gap-2">
+        <select value={selected} onChange={(e) => setSelected(e.target.value as ContentModuleKey)} className="admin-input">
+          {CONTENT_MODULES.map((m) => (
+            <option key={m.key} value={m.key}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs text-slate-500 self-center">{CONTENT_MODULES.find((m) => m.key === selected)?.hint}</span>
+      </div>
+      <Notice error={error} success={notice} />
+      <AsyncState loading={loading} error={error} empty={false}>
+        <form onSubmit={save} className="space-y-4">
+          <Panel>
+            <p className="text-sm text-slate-500 mb-3">
+              Modul <b>{selected}</b> — edit JSON untuk modul ini saja. Simpan akan `PUT /v1/{selected}` dan otomatis sync ke legacy `site_content`.
+            </p>
+            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={20} className="admin-textarea font-mono text-xs" aria-label={`JSON ${selected}`} />
+          </Panel>
+          <div className="flex gap-2">
+            <button disabled={saving || !roleCan(user, ["ADMIN"])} className="button-primary disabled:opacity-50">
+              {saving ? "Menyimpan..." : `Simpan ${selected}`}
+            </button>
+            <button type="button" onClick={() => loadModule(selected)} className="button-secondary">
+              Buang perubahan
+            </button>
+          </div>
+        </form>
+      </AsyncState>
+    </Section>
+  );
 }
-
 function PostsView({ user }: { user: RoleAwareUser }) {
   const [posts, setPosts] = useState<Post[]>([]); const [form, setForm] = useState<PostForm>(emptyPost()); const [editing, setEditing] = useState<string | null>(null); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [notice, setNotice] = useState("");
   const [pagination, setPagination] = useState<PaginationMeta | null>(null); const [offset, setOffset] = useState(0);

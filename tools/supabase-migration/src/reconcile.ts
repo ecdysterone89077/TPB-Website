@@ -104,6 +104,19 @@ async function main() {
     check("content.checksum", hash(content), hash(contentRow?.data));
   }
 
+  // site_modules modular — tiap key di content.json harus ada di site_modules
+  if (contentPresent && content != null && typeof content === "object") {
+    const expectedModules = content as Record<string, unknown>;
+    const moduleKeys = Object.keys(expectedModules);
+    const dbModules = moduleKeys.length ? await prisma.siteModule.findMany({ where: { key: { in: moduleKeys } }, select: { key: true, data: true } }) : [];
+    check("siteModules", moduleKeys.length, dbModules.length);
+    for (const k of moduleKeys) {
+      const expected = (expectedModules as any)[k];
+      const actual = dbModules.find((m) => m.key === k)?.data ?? null;
+      check(`siteModules.${k}`, hash(expected), hash(actual));
+    }
+  }
+
   // ------------------------------------------------------------------ stats
   const stats = readJson("stats.json");
   checkChecksum("stats", stats);
