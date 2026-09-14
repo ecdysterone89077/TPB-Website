@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { normalizeDriveUrl } from "../../lib/drive";
 import type { GalleryItem, Post, SiteContent } from "@tpb/contracts";
 import { api } from "../../lib/api";
 import { openGallery, videoThumbUrl } from "./Gallery";

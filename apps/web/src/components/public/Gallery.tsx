@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { normalizeDriveUrl } from "../../lib/drive";
 import type { GalleryItem } from "@tpb/contracts";
 import { api } from "../../lib/api";
 
@@ -53,7 +54,7 @@ function Viewer({ item }: { item: GalleryItem }) {
         <iframe src={ig} title={item.title || item.caption || "Instagram"} allowTransparency allow="encrypted-media" className="h-full w-full border-0" />
       </div>;
   }
-  return <img src={item.image} alt={item.caption || item.title || ""} className="max-h-[75vh] w-full rounded-2xl object-contain bg-black" />;
+  return <img src={normalizeDriveUrl(item.image)} alt={item.caption || item.title || ""} className="max-h-[75vh] w-full rounded-2xl object-contain bg-black" />;
 }
 
 export function GalleryHost() {
@@ -105,7 +106,7 @@ export function GalleryHost() {
       {cats.length > 1 && <div className="mb-4 flex flex-wrap gap-2">{cats.map((c) => <button key={c} onClick={() => { setCat(c); setMode("grid"); }} className={`rounded-full px-4 py-2 text-xs font-bold ${cat === c ? "bg-gold text-midnight" : "bg-white/15 text-white hover:bg-white/25"}`}>{c}</button>)}</div>}
       {mode === "grid" && shown.length > 0 && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {shown.map((item, i) => <button key={item.id} onClick={() => { setIndex(i); setMode("view"); }} className="group relative aspect-square overflow-hidden rounded-xl bg-white/10" aria-label={item.title || item.caption || `Item ${i + 1}`}>
-          {item.kind === "video" ? <VideoThumb item={item} /> : <img src={item.image} alt="" loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" />}
+          {item.kind === "video" ? <VideoThumb item={item} /> : <img src={normalizeDriveUrl(item.image)} alt="" loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" />}
           {item.title && <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-5 text-left text-[11px] font-bold text-white">{item.title}</span>}
         </button>)}
       </div>}
