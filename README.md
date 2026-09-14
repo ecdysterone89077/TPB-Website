@@ -230,9 +230,9 @@ Pastikan direktori `MEDIA_DIR`:
 ## Alur Admin
 
 1. Buka `/#admin` — selama tabel `users` (MySQL) kosong, form **Bootstrap Admin** muncul (sekali pakai; paritas gerbang "akun pertama" dari sistem lama).
-2. Login → dashboard penuh: **Dashboard, Konten Situs, Berita, PMB, Galeri & Media, Pelanggan, Pengguna, Audit Log**.
-3. **Konten Situs harus diisi dari dashboard** — situs publik menampilkan state "belum dikonfigurasi" sampai konten tersimpan di database. Tidak ada fallback/default content di kode (kebijakan: *tidak boleh ada data static inline / fallback / hardcode menempel di file code*).
-4. **Migrasi antar-environment via panel** — tombol Export JSON di Konten Situs mengunduh satu file berisi konten situs + berita + galeri + file media; Import JSON menimpa konten dan menambahkan berita/galeri/media ke database tujuan. Data mengalir antar-database saat runtime — tanpa seeder di repo.
+2. Login → dashboard penuh: **Dashboard, Konten Modular (19 menu: Branding, Navigasi, Hero, Marquee, Statistik, Tentang Prodi, Pilar Keilmuan, Riset & Inovasi, Pengabdian Masyarakat, Kehidupan Mahasiswa, Profil, Akademik, Penelitian, Pengabdian, Kemahasiswaan, Berita Kicker, CTA, Footer, PMB Link), Berita, PMB, Galeri & Media, Pelanggan, Pengguna, Audit Log** — tiap menu punya endpoint sendiri `PUT /v1/{brand,navigation,hero,marquee,stats,about,programs,research,community,studentLife,profil,akademik,penelitian,pengabdian,kemahasiswaan,news,cta,footer,pmbLink}` dengan validasi Zod slice. `GET /v1/content` tetap sebagai aggregator 19 modul (kompatibel legacy) dan `PUT /v1/content` masih ada tapi deprecated (sync ke `site_modules`).
+3. **Konten Modular harus diisi dari dashboard** — situs publik menampilkan state "belum dikonfigurasi" sampai tiap modul tersimpan di `site_modules` (fallback ke `site_content.key=main` legacy jika kosong). Tidak ada fallback/default content di kode (kebijakan: *tidak boleh ada data static inline / fallback / hardcode menempel di file code*).
+4. **Migrasi antar-environment via panel** — tombol Export JSON di Konten Modular mengunduh bundle modular (`site_modules` + berita + galeri + media); Import via `tools/supabase-migration` (pecah `content.json` → 19 baris `site_modules` + legacy `site_content`). Data mengalir antar-database saat runtime — tanpa seeder di repo.
 5. **Galeri & Media** — tiap item punya judul, jenis (gambar/video), kategori kustom, caption, tautan, dan thumbnail kustom. Menu Galeri di situs membuka popup lightbox (grid → putar langsung di tempat). Video YouTube memakai thumbnail otomatis; video Instagram memakai thumbnail yang diunggah manual (Instagram tidak menyediakan thumbnail publik).
 6. **Pencarian** — tombol Cari di menu mencari keyword di seluruh konten situs dan berita.
 
@@ -243,16 +243,19 @@ Pastikan direktori `MEDIA_DIR`:
 ```bash
 cd tools/supabase-migration
 
-# Export data dari Supabase
+# Export data dari Supabase (kv_store_1860c1e8: posts, stats, subscribers, pmb, gallery, content)
 SUPABASE_URL=https://<ref>.supabase.co \
 SUPABASE_SERVICE_ROLE_KEY=<key> pnpm export
 
-# Import ke MySQL (idempoten)
+# Import ke MySQL (idempoten) — content.json dipecah otomatis ke 19 baris site_modules + legacy site_content
 pnpm import
 
-# Verifikasi: bandingkan jumlah + checksum
+# Verifikasi: bandingkan jumlah + checksum (posts, subscribers, pmb, gallery, content, site_modules 19 key, stats)
 pnpm reconcile
 ```
+
+- `import` memvalidasi `content.json` via `SiteContentSchema` lalu `upsert` tiap key ke `site_modules` (brand, navigation, hero, marquee, stats, about, programs, research, community, studentLife, profil, akademik, penelitian, pengabdian, kemahasiswaan, news, cta, footer, pmbLink) + tetap `site_content.key=main` untuk aggregator fallback.
+- `reconcile` cek hash per-modul `site_modules.*` vs `content.json` + hitungan baris.
 
 Service-role key **hanya** melalui variabel environment — tidak pernah masuk repo, tidak pernah diekspos ke frontend.
 

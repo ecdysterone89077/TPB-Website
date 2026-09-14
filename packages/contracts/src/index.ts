@@ -210,6 +210,52 @@ export type SiteContent = ValidatedSiteContent;
 
 export const ContentSchema = z.object({ content: SiteContentSchema });
 
+// ---------------------------------------------------------------- modular slices (Opsi B — tiap top-level key SiteContent jadi modul terpisah)
+// Tiap slice dipakai untuk validasi PUT /v1/<modul> dan seed site_modules. Jangan duplikat manual — ambil dari SiteContentSchema.shape.
+export const BrandSchema = SiteContentSchema.shape.brand;
+export type BrandContent = z.infer<typeof BrandSchema>;
+export const NavigationSchema = SiteContentSchema.shape.navigation;
+export type NavigationContent = z.infer<typeof NavigationSchema>;
+export const HeroSchema = SiteContentSchema.shape.hero;
+export type HeroContent = z.infer<typeof HeroSchema>;
+export const MarqueeSchema = SiteContentSchema.shape.marquee;
+export type MarqueeContent = z.infer<typeof MarqueeSchema>;
+export const StatsContentSchema = SiteContentSchema.shape.stats;
+export type StatsContent = z.infer<typeof StatsContentSchema>;
+export const AboutSchema = SiteContentSchema.shape.about;
+export type AboutContent = z.infer<typeof AboutSchema>;
+export const ProgramsSchema = SiteContentSchema.shape.programs;
+export type ProgramsContent = z.infer<typeof ProgramsSchema>;
+export const ResearchSchema = SiteContentSchema.shape.research;
+export type ResearchContent = z.infer<typeof ResearchSchema>;
+export const CommunitySchema = SiteContentSchema.shape.community;
+export type CommunityContent = z.infer<typeof CommunitySchema>;
+export const StudentLifeSchema = SiteContentSchema.shape.studentLife;
+export type StudentLifeContent = z.infer<typeof StudentLifeSchema>;
+export const ProfilSchema = SiteContentSchema.shape.profil;
+export type ProfilContent = z.infer<typeof ProfilSchema>;
+export const AkademikSchema = SiteContentSchema.shape.akademik;
+export type AkademikContent = z.infer<typeof AkademikSchema>;
+export const PenelitianSchema = SiteContentSchema.shape.penelitian;
+export type PenelitianContent = z.infer<typeof PenelitianSchema>;
+export const PengabdianSchema = SiteContentSchema.shape.pengabdian;
+export type PengabdianContent = z.infer<typeof PengabdianSchema>;
+export const KemahasiswaanSchema = SiteContentSchema.shape.kemahasiswaan;
+export type KemahasiswaanContent = z.infer<typeof KemahasiswaanSchema>;
+export const NewsSchema = SiteContentSchema.shape.news;
+export type NewsContent = z.infer<typeof NewsSchema>;
+export const CtaSchema = SiteContentSchema.shape.cta;
+export type CtaContent = z.infer<typeof CtaSchema>;
+export const FooterSchema = SiteContentSchema.shape.footer;
+export type FooterContent = z.infer<typeof FooterSchema>;
+export const PmbLinkSchema = SiteContentSchema.shape.pmbLink;
+export type PmbLinkContent = z.infer<typeof PmbLinkSchema>;
+
+// Envelope per modul untuk API modular
+export const BrandEnvelopeSchema = z.object({ brand: BrandSchema });
+export const NavigationEnvelopeSchema = z.object({ navigation: NavigationSchema });
+export const HeroEnvelopeSchema = z.object({ hero: HeroSchema });
+
 export const PaginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).max(100_000).default(0),
