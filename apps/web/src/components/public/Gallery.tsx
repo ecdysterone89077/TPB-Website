@@ -77,6 +77,7 @@ export function GalleryHost() {
     return () => window.removeEventListener(GALLERY_OPEN_EVENT, handler);
   }, []);
   const close = useCallback(() => setOpen(false), []);
+  const shown = cat === "Semua" ? items : items.filter((i) => i.category === cat);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -90,10 +91,9 @@ export function GalleryHost() {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [open, close, items.length]);
+  }, [open, close, shown.length]);
   if (!open) return null;
   const cats = ["Semua", ...Array.from(new Set(items.map((i) => i.category).filter((c): c is string => !!c)))];
-  const shown = cat === "Semua" ? items : items.filter((i) => i.category === cat);
   const current = shown[Math.min(index, Math.max(0, shown.length - 1))];
   return <div className="fixed inset-0 z-[100] overflow-y-auto bg-midnight/85 p-4" onClick={close}>
     <div className="mx-auto w-full max-w-4xl py-8" onClick={(e) => e.stopPropagation()}>

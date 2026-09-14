@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { api, type PaginationMeta } from "../lib/api";
 import { videoThumbUrl } from "./public/Gallery";
 import type {
@@ -10,7 +10,6 @@ import type {
   Post,
   Registration,
   Role,
-  SiteContent,
   Subscriber,
 } from "@tpb/contracts";
 
@@ -209,7 +208,6 @@ function ContentView({ user }: { user: RoleAwareUser }) {
     finally { setSaving(false); }
   };
 
-  const fileRef = useRef<HTMLInputElement>(null);
   const stamp = () => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
   const exportAll = async () => {
     try {

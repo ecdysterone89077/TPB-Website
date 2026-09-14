@@ -55,7 +55,6 @@ export class ContentController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN")
   async save(@Body() body: unknown, @Req() req: CookieRequest) {
-    // eslint-disable-next-line no-console
     console.warn("[DEPRECATED] PUT /v1/content — gunakan PUT /v1/<modul> per modul");
     const { content } = parse(ContentSchema, body);
     const saved = await this.prisma.siteContent.upsert({
