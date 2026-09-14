@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { api, type PaginationMeta } from "../lib/api";
 import { videoThumbUrl } from "./public/Gallery";
 import type {
@@ -209,6 +209,31 @@ function ContentView({ user }: { user: RoleAwareUser }) {
   };
 
   const stamp = () => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
+  const fileRef = useRef<HTMLInputElement>(null);
+  const importFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      let data: unknown = parsed;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && "content" in (parsed as any)) {
+        const c = (parsed as any).content;
+        if (selected === "legacy") data = c;
+        else if (c && typeof c === "object" && selected in c) data = (c as any)[selected];
+        else if (selected in (parsed as any)) data = (parsed as any)[selected];
+      } else if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && selected in (parsed as any) && selected !== "legacy") {
+        data = (parsed as any)[selected];
+      }
+      setDraft(JSON.stringify(data, null, 2));
+      setNotice(`File ${file.name} dimuat untuk ${selected} — klik Simpan.`);
+      setError("");
+    } catch (err: any) {
+      setError(err instanceof SyntaxError ? "File JSON tidak valid." : err?.message ?? "Gagal import.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
   const exportAll = async () => {
     try {
       const content = await api.getContent();
@@ -225,6 +250,8 @@ function ContentView({ user }: { user: RoleAwareUser }) {
       title="Konten Modular"
       action={
         <div className="flex gap-2">
+          <input ref={fileRef} type="file" accept=".json,application/json" onChange={importFile} className="hidden" />
+          <button onClick={() => fileRef.current?.click()} className="button-secondary">Import JSON</button>
           <button onClick={exportAll} className="button-secondary">Export JSON</button>
           <button onClick={() => loadModule(selected)} className="button-secondary">Muat ulang</button>
         </div>
