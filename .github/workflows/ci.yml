@@ -79,6 +79,9 @@ jobs:
       - name: Unit tests (API, mocked)
         run: pnpm --filter @tpb/api test -- --ci
 
+      - name: Unit tests (web)
+        run: pnpm --filter @tpb/web test
+
       - name: API integration smoke test
         run: |
           DATABASE_URL=mysql://tpb:tpb-dev-password@localhost:3306/tpb \

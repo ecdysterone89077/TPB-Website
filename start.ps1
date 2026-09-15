@@ -110,6 +110,12 @@ if (-not (Test-Path (Join-Path $ROOT "node_modules"))) {
   Write-Ok "node_modules sudah ada (skip, hapus folder untuk reinstall paksa)"
 }
 
+# 4b) Build kontrak bersama - API me-resolve @tpb/contracts ke packages/contracts/dist
+Write-Step "Build contracts"
+pnpm --filter @tpb/contracts build
+if ($LASTEXITCODE -ne 0) { Write-Error "build contracts gagal"; exit 1 }
+Write-Ok "contracts dist built"
+
 # 5) Prisma
 Write-Step "Prisma"
 pnpm --filter @tpb/api prisma:generate

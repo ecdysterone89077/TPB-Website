@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, UseGuards, ConflictException } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { PmbInputSchema, PmbStatusSchema } from "@tpb/contracts";
 import { PrismaService } from "../prisma.service";
 import { JwtAuthGuard, Roles, RolesGuard } from "../auth";
@@ -10,6 +11,7 @@ export class PmbController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Post()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(201)
   async create(@Body() body: unknown) {
     const input = parse(PmbInputSchema, body);

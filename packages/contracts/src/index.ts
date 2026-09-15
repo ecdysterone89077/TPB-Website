@@ -104,7 +104,12 @@ export const PostInputSchema = z.object({
   category: z.string().trim().min(1).max(80),
   excerpt: z.string().max(2000).default(""),
   content: z.string().max(100000).nullable().optional(),
-  image: z.string().url().nullable().optional(),
+  image: z
+    .string()
+    .max(2000)
+    .refine((v) => !/\s/.test(v) && (/^https?:\/\/[^\s/]+/i.test(v) || (v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\"))), { message: "Gambar harus URL http(s) atau path absolut /..." })
+    .nullable()
+    .optional(),
   readTime: z.string().max(40).default(""),
   status: z.enum(["published", "draft"]).default("draft"),
   date: z.string().datetime().optional(),

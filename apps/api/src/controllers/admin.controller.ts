@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { hash } from "@node-rs/argon2";
 import { memoryStorage } from "multer";
@@ -53,6 +53,15 @@ export class AdminController {
     return { user: { ...user, passwordHash: undefined } };
   }
 
+  private async guardedTransaction<T>(work: (tx: any) => Promise<T>): Promise<T> {
+    try {
+      return await this.prisma.$transaction(work, { isolationLevel: "Serializable" });
+    } catch (error: any) {
+      if (error?.code === "P2034") throw new ConflictException("Data pengguna sedang diubah proses lain. Coba lagi.");
+      throw error;
+    }
+  }
+
   @Put("users/:id")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN")
@@ -63,7 +72,26 @@ export class AdminController {
     if (input.role !== undefined) data.role = input.role;
     if (input.isActive !== undefined) data.isActive = input.isActive;
     if (input.password) data.passwordHash = await hash(input.password);
-    const user = await this.prisma.user.update({ where: { id }, data });
+    const demotes = (input.role !== undefined && input.role !== "ADMIN") || input.isActive === false;
+    let user: any;
+    if (demotes) {
+      user = await this.guardedTransaction(async (tx) => {
+        const target = await tx.user.findUnique({ where: { id } });
+        if (!target) throw new NotFoundException("Pengguna tidak ditemukan.");
+        if (target.role === "ADMIN" && target.isActive) {
+          const otherAdmins = await tx.user.count({ where: { role: "ADMIN", isActive: true, id: { not: id } } });
+          if (otherAdmins === 0) throw new BadRequestException("Tidak dapat menonaktifkan atau menurunkan admin aktif terakhir.");
+        }
+        return tx.user.update({ where: { id }, data });
+      });
+    } else {
+      try {
+        user = await this.prisma.user.update({ where: { id }, data });
+      } catch (error: any) {
+        if (error?.code === "P2025") throw new NotFoundException("Pengguna tidak ditemukan.");
+        throw error;
+      }
+    }
     return { user: { ...user, passwordHash: undefined } };
   }
 
@@ -71,8 +99,16 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN")
   async deleteUser(@Param("id") id: string, @Req() req: AuthRequest) {
-    if (req.user?.id === id) throw new Error("Tidak dapat menghapus akun sendiri.");
-    await this.prisma.user.delete({ where: { id } });
+    if (req.user?.id === id) throw new BadRequestException("Tidak dapat menghapus akun sendiri.");
+    await this.guardedTransaction(async (tx) => {
+      const target = await tx.user.findUnique({ where: { id } });
+      if (!target) throw new NotFoundException("Pengguna tidak ditemukan.");
+      if (target.role === "ADMIN" && target.isActive) {
+        const otherAdmins = await tx.user.count({ where: { role: "ADMIN", isActive: true, id: { not: id } } });
+        if (otherAdmins === 0) throw new BadRequestException("Tidak dapat menghapus admin aktif terakhir.");
+      }
+      await tx.user.delete({ where: { id } });
+    });
     return { ok: true };
   }
 

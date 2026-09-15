@@ -30,7 +30,7 @@ export class AuditInterceptor implements NestInterceptor {
     if (!["POST", "PUT", "PATCH", "DELETE"].includes(method)) return next.handle();
     const route = String(req.route?.path ?? req.url ?? "unknown");
     // Body /pmb dan /auth tidak pernah dipersist (PII + kredensial).
-    const skipBody = route.includes("/pmb") || route.includes("/auth");
+    const skipBody = /(^|\/)(auth|pmb)(\/|$)/.test(route);
     return next.handle().pipe(
       tap({
         next: () => {

@@ -4,7 +4,7 @@ Monorepo untuk situs resmi Program Studi Teknik Pertanian & Biosistem UNU Purwok
 
 | Aplikasi | Keterangan |
 |---|---|
-| `apps/web` | Frontend React 19 + Vite 8 + Tailwind v4 |
+| `apps/web` | Frontend React 19 + Vite 6 + Tailwind v4 |
 | `apps/api` | REST API NestJS 11 + Prisma + MySQL 8.0, prefix `/v1` |
 | `packages/contracts` | Tipe & skema Zod bersama (frontend ↔ backend) |
 | `tools/supabase-migration` | Tooling migrasi data Supabase KV → MySQL |
@@ -69,14 +69,21 @@ cp apps/api/.env.example apps/api/.env
 # Edit apps/api/.env — isi JWT secret: openssl rand -hex 48
 cp apps/web/.env.example apps/web/.env
 
-# 3. Instal dependensi & jalankan migrasi database
+# 3. Instal dependensi, build kontrak bersama, lalu jalankan migrasi database
 pnpm install
+pnpm --filter @tpb/contracts build
 pnpm --filter @tpb/api prisma:migrate
 
 # 4. Jalankan aplikasi
 pnpm dev:api    # http://localhost:3000/v1
 pnpm dev:web    # http://localhost:5173
 ```
+
+Catatan:
+
+- `pnpm dev:api` memakai `tsx watch`; jika mengalami kendala DI pada Node 24, gunakan `pnpm dev:api:dist` (build API lalu jalankan `node apps/api/dist/main.js`).
+- `docker compose up -d db` memerlukan CLI Docker di PATH; bila Docker hanya tersedia di dalam WSL, jalankan perintah tersebut dari WSL (aplikasi tetap diakses dari Windows melalui `localhost`).
+- API me-resolve `@tpb/contracts` ke `packages/contracts/dist`, sehingga langkah build kontrak di atas wajib dijalankan pada checkout bersih.
 
 ### Perintah database
 
@@ -244,9 +251,9 @@ Pastikan direktori `MEDIA_DIR`:
 ## Alur Admin
 
 1. Buka `/#admin` — selama tabel `users` (MySQL) kosong, form **Bootstrap Admin** muncul (sekali pakai; paritas gerbang "akun pertama" dari sistem lama).
-2. Login → dashboard penuh: **Dashboard, Konten Modular (19 menu: Branding, Navigasi, Hero, Marquee, Statistik, Tentang Prodi, Pilar Keilmuan, Riset & Inovasi, Pengabdian Masyarakat, Kehidupan Mahasiswa, Profil, Akademik, Penelitian, Pengabdian, Kemahasiswaan, Berita Kicker, CTA, Footer, PMB Link), Berita, PMB, Galeri & Media, Pelanggan, Pengguna, Audit Log** — tiap menu punya endpoint sendiri `PUT /v1/{brand,navigation,hero,marquee,stats,about,programs,research,community,studentLife,profil,akademik,penelitian,pengabdian,kemahasiswaan,news,cta,footer,pmbLink}` dengan validasi Zod slice. `GET /v1/content` tetap sebagai aggregator 19 modul (kompatibel legacy) dan `PUT /v1/content` masih ada tapi deprecated (sync ke `site_modules`).
+2. Login → dashboard penuh: **Dashboard, Konten Modular (19 modul + editor `legacy`: Branding, Navigasi, Hero, Marquee, Statistik, Tentang Prodi, Pilar Keilmuan, Riset & Inovasi, Pengabdian Masyarakat, Kehidupan Mahasiswa, Profil, Akademik, Penelitian, Pengabdian, Kemahasiswaan, Berita Kicker, CTA, Footer, PMB Link), Berita, PMB, Galeri & Media, Pelanggan, Pengguna, Audit Log** — tiap menu punya endpoint sendiri `PUT /v1/{brand,navigation,hero,marquee,stats,about,programs,research,community,studentLife,profil,akademik,penelitian,pengabdian,kemahasiswaan,news,cta,footer,pmbLink}` dengan validasi Zod slice. `GET /v1/content` tetap sebagai aggregator 19 modul (kompatibel legacy) dan `PUT /v1/content` masih ada tapi deprecated (sync ke `site_modules`).
 3. **Konten Modular harus diisi dari dashboard** — situs publik menampilkan state "belum dikonfigurasi" sampai tiap modul tersimpan di `site_modules` (fallback ke `site_content.key=main` legacy jika kosong). Tidak ada fallback/default content di kode (kebijakan: *tidak boleh ada data static inline / fallback / hardcode menempel di file code*).
-4. **Migrasi antar-environment via panel** — tombol `Export JSON` di Konten Modular mengunduh bundle modular (`site_modules` + berita + galeri + media), tombol `Import JSON` per-modul memuat file `.json` (bundle `tpb-modular-*.json`, objek full 19 key, atau JSON mentah modul) ke textarea lalu `Simpan` → `PUT /v1/{key}`; untuk migrasi massal antar-database pakai `tools/supabase-migration` (`pnpm import` pecah `content.json` → 19 baris `site_modules` + legacy). Data mengalir antar-database saat runtime — tanpa seeder di repo.
+4. **Migrasi antar-environment via panel** — tombol `Export JSON` di Konten Modular mengunduh bundle 19 modul (`content`); berita, galeri, dan media dikelola lewat menunya masing-masing. Tombol `Import JSON` per-modul memuat file `.json` (bundle `tpb-modular-*.json`, objek full 19 key, atau JSON mentah modul) ke textarea lalu `Simpan` → `PUT /v1/{key}`; untuk migrasi massal antar-database pakai `tools/supabase-migration` (`pnpm import` pecah `content.json` → 19 baris `site_modules` + legacy). Data mengalir antar-database saat runtime — tanpa seeder di repo.
 5. **Galeri & Media** — tiap item punya judul, jenis (gambar/video), kategori kustom, caption, tautan, dan thumbnail kustom. Menu Galeri di situs membuka popup lightbox (grid → putar langsung di tempat). Video YouTube memakai thumbnail otomatis; video Instagram memakai thumbnail yang diunggah manual (Instagram tidak menyediakan thumbnail publik).
 6. **Pencarian** — tombol Cari di menu mencari keyword di seluruh konten situs dan berita.
 
@@ -281,7 +288,10 @@ Service-role key **hanya** melalui variabel environment — tidak pernah masuk r
 |---|---|
 | Access token | JWT, 15 menit, di memori frontend, header `Authorization: Bearer` |
 | Refresh token | 30 hari, httpOnly cookie `tpb_refresh`; disimpan di database sebagai hash SHA-256, rotasi saat dipakai, revocation di logout |
+| Reuse detection | Refresh token yang sudah dicabut lalu dipakai ulang → seluruh sesi aktif pengguna dicabut (family revocation) dan cookie dibersihkan |
+| Rate limit | Global 100 req/menit per IP; khusus login 10/menit, bootstrap 5/menit, refresh 30/menit, pendaftaran PMB 10/menit. Di belakang reverse proxy, set `TRUST_PROXY` ke jumlah hop (mis. `1`) agar limit dan audit IP akurat |
 | Role | `ADMIN` (semua akses), `EDITOR` (konten & berita), `OPERATOR` (PMB & galeri) |
+| Proteksi admin | Akun admin aktif terakhir tidak dapat dihapus, diturunkan, atau dinonaktifkan; pengguna tidak dapat menghapus akunnya sendiri |
 | Bootstrap admin | Hanya tersedia saat tabel `users` kosong |
 
 ---

@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/media/:path*",
-      "destination": "https://API_HOST/media/:path*"
+      "destination": "https://api.tpb.unupurwokerto.ac.id/media/:path*"
     }
   ]
 }
