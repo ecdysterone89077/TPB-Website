@@ -78,6 +78,23 @@ describe("AuditInterceptor", () => {
     expect(args.data.metadata).toBeNull();
   });
 
+  it("body /pmb-link tidak di-skip (bukan PII pendaftaran) dan tetap di-redaksi", async () => {
+    const prisma = makePrisma();
+    const i = new AuditInterceptor(prisma as any);
+    await run(i, makeCtx({ method: "PUT", routePath: "/v1/pmb-link", body: { pmbLink: "https://tpb.test", token: "rahasia" } }));
+    const md = prisma.auditLog.create.mock.calls[0][0].data.metadata;
+    expect(md).not.toBeNull();
+    expect(md.pmbLink).toBe("https://tpb.test");
+    expect(md.token).toBe("[redacted]");
+  });
+
+  it("body /pmb/:id/status tetap tidak dipersist (PII pendaftar)", async () => {
+    const prisma = makePrisma();
+    const i = new AuditInterceptor(prisma as any);
+    await run(i, makeCtx({ method: "PUT", routePath: "/v1/pmb/:id/status", body: { status: "diproses" } }));
+    expect(prisma.auditLog.create.mock.calls[0][0].data.metadata).toBeNull();
+  });
+
   it("kegagalan audit tidak menggagalkan request (fire-and-forget)", async () => {
     const prisma = { auditLog: { create: jest.fn().mockRejectedValue(new Error("db down")) } };
     const i = new AuditInterceptor(prisma as any);

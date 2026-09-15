@@ -68,4 +68,19 @@ describe("controller behavior with mocked Prisma", () => {
   it("schema PMB menolak email invalid dan phone terlalu pendek", () => {
     expect(() => parse(PmbInputSchema, { name: "A", email: "invalid", phone: "123" })).toThrow(BadRequestException);
   });
+
+  it("schema post menerima URL absolut, path /media, dan null sebagai gambar", () => {
+    expect(parse(PostInputSchema, { title: "x", category: "Umum", image: "https://tpb.test/a.png" }).image).toBe("https://tpb.test/a.png");
+    expect(parse(PostInputSchema, { title: "x", category: "Umum", image: "/media/a.png" }).image).toBe("/media/a.png");
+    expect(parse(PostInputSchema, { title: "x", category: "Umum", image: null }).image).toBeNull();
+  });
+
+  it("schema post menolak gambar dengan skema selain http(s) atau path absolut", () => {
+    expect(() => parse(PostInputSchema, { title: "x", category: "Umum", image: "javascript:alert(1)" })).toThrow(BadRequestException);
+    expect(() => parse(PostInputSchema, { title: "x", category: "Umum", image: "relatif/a.png" })).toThrow(BadRequestException);
+    expect(() => parse(PostInputSchema, { title: "x", category: "Umum", image: "//evil.test/x.png" })).toThrow(BadRequestException);
+    expect(() => parse(PostInputSchema, { title: "x", category: "Umum", image: "/\\evil.test/x.png" })).toThrow(BadRequestException);
+    expect(() => parse(PostInputSchema, { title: "x", category: "Umum", image: "https://" })).toThrow(BadRequestException);
+    expect(() => parse(PostInputSchema, { title: "x", category: "Umum", image: "/media/x.png " })).toThrow(BadRequestException);
+  });
 });

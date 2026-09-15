@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
+import { Throttle } from "@nestjs/throttler";
 import { hash } from "@node-rs/argon2";
 import type { Request, Response } from "express";
 import { BootstrapSchema, LoginSchema, type Role } from "@tpb/contracts";
@@ -39,6 +40,7 @@ export class AuthController {
   }
 
   @Post("bootstrap")
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async bootstrap(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const { name, email, password } = parse(BootstrapSchema, body);
     const user = await this.prisma.$transaction(async (tx) => {
@@ -51,6 +53,7 @@ export class AuthController {
   }
 
   @Post("login")
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(200)
   async login(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const { email, password } = parse(LoginSchema, body);
@@ -63,13 +66,20 @@ export class AuthController {
   }
 
   @Post("refresh")
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @HttpCode(200)
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const name = config.cookieName;
     const raw = req.cookies?.[name] as string | undefined;
     if (!raw) throw new UnauthorizedException("Refresh token diperlukan.");
     const current = await this.prisma.refreshToken.findUnique({ where: { tokenHash: hashToken(raw) }, include: { user: true } });
-    if (!current || current.revokedAt || current.expiresAt <= new Date() || !current.user.isActive) {
+    if (!current) throw new UnauthorizedException("Refresh token tidak valid.");
+    if (current.expiresAt <= new Date() || !current.user.isActive) {
+      throw new UnauthorizedException("Refresh token tidak valid.");
+    }
+    if (current.revokedAt) {
+      await this.prisma.refreshToken.updateMany({ where: { userId: current.userId, revokedAt: null }, data: { revokedAt: new Date() } });
+      res.clearCookie(name, this.cookieOptions());
       throw new UnauthorizedException("Refresh token tidak valid.");
     }
     const nextRaw = newRefreshToken();
