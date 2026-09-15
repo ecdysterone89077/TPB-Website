@@ -2,7 +2,7 @@ import { BadRequestException, UnauthorizedException } from "@nestjs/common";
 import { PmbController } from "./controllers/pmb.controller";
 import { PostsController } from "./controllers/posts.controller";
 import { parse } from "./zod";
-import { PmbInputSchema, PostInputSchema } from "@tpb/contracts";
+import { AboutSchema, AkademikSchema, BrandSchema, CommunitySchema, HeroSchema, PmbInputSchema, PostInputSchema, ProfilSchema, ProgramsSchema } from "@tpb/contracts";
 
 describe("controller behavior with mocked Prisma", () => {
   it("PMB mengembalikan registration yang sama untuk idempotency key yang sudah ada", async () => {
@@ -82,5 +82,61 @@ describe("controller behavior with mocked Prisma", () => {
     expect(() => parse(PostInputSchema, { title: "x", category: "Umum", image: "/\\evil.test/x.png" })).toThrow(BadRequestException);
     expect(() => parse(PostInputSchema, { title: "x", category: "Umum", image: "https://" })).toThrow(BadRequestException);
     expect(() => parse(PostInputSchema, { title: "x", category: "Umum", image: "/media/x.png " })).toThrow(BadRequestException);
+  });
+});
+
+const brand = { kicker: "", name: "TPB", org: "UNU", logoUrl: "https://tpb.test/logo.png" };
+const hero = { badge: "", line1: "a", highlight: "b", line2: "c", subtitle: "", primaryLabel: "Daftar", primaryHref: "#pmb", secondaryLabel: "", image: "https://tpb.test/hero.jpg" };
+const about = { kicker: "", title: "", body: "", sinceYear: "2024", sinceNote: "", image: "https://tpb.test/about.jpg", points: [] };
+const programs = { kicker: "", title: "", cta: "", cards: [{ tag: "", title: "", body: "", img: "https://tpb.test/kartu.jpg", color: "" }] };
+const community = { kicker: "", title: "", body: "", image: "https://tpb.test/masyarakat.jpg", items: [] };
+const profil = {
+  sejarah: { kicker: "", title: "", intro: "", timeline: [] },
+  visiMisi: { kicker: "", title: "", visi: "", misi: [] },
+  struktur: { kicker: "", title: "", people: [] },
+  sambutan: { kicker: "", title: "", image: "https://tpb.test/sambutan.jpg", quote: "", name: "", role: "" },
+};
+const akademik = (photo?: unknown, omit = false) => ({
+  kurikulum: { kicker: "", title: "", intro: "", sks: [], clusters: [] },
+  kalender: { kicker: "", title: "", items: [] },
+  dosen: { kicker: "", title: "", intro: "", people: [{ name: "A", field: "B", ...(omit ? {} : { photo }) }] },
+  laboratorium: { kicker: "", title: "", labs: [] },
+});
+
+describe("field gambar modul menerima kosong (tanpa gambar)", () => {
+  it('menerima "" dan null pada seluruh field gambar', () => {
+    for (const v of ["", null]) {
+      expect(parse(BrandSchema, { ...brand, logoUrl: v }).logoUrl).toBe(v);
+      expect(parse(HeroSchema, { ...hero, image: v }).image).toBe(v);
+      expect(parse(AboutSchema, { ...about, image: v }).image).toBe(v);
+      expect(parse(ProgramsSchema, { ...programs, cards: [{ ...programs.cards[0], img: v }] }).cards[0].img).toBe(v);
+      expect(parse(CommunitySchema, { ...community, image: v }).image).toBe(v);
+      expect(parse(ProfilSchema, { ...profil, sambutan: { ...profil.sambutan, image: v } }).sambutan.image).toBe(v);
+      expect(parse(AkademikSchema, akademik(v)).dosen.people[0].photo).toBe(v);
+    }
+  });
+
+  it("foto dosen boleh dihilangkan tanpa key photo", () => {
+    expect(parse(AkademikSchema, akademik(undefined, true)).dosen.people[0].photo).toBeUndefined();
+  });
+
+  it("spasi dan string lebih dari 2000 karakter tetap ditolak", () => {
+    expect(() => parse(HeroSchema, { ...hero, image: " " })).toThrow(BadRequestException);
+    expect(() => parse(HeroSchema, { ...hero, image: `https://tpb.test/${"a".repeat(2000)}` })).toThrow(BadRequestException);
+  });
+
+  it("tipe gambar salah memberi pesan spesifik (bukan Invalid input)", () => {
+    try {
+      parse(HeroSchema, { ...hero, image: 123 });
+      throw new Error("seharusnya gagal");
+    } catch (error) {
+      const res = (error as BadRequestException).getResponse() as any;
+      expect(res.issues[0].message).toContain("string");
+    }
+  });
+
+  it("batas panjang 2000 diterima dan 2001 ditolak", () => {
+    expect(parse(HeroSchema, { ...hero, image: `https://tpb.test/${"a".repeat(1983)}` }).image).toHaveLength(2000);
+    expect(() => parse(HeroSchema, { ...hero, image: `https://tpb.test/${"a".repeat(1984)}` })).toThrow(BadRequestException);
   });
 });
