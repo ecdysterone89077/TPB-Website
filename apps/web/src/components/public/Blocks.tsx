@@ -124,6 +124,44 @@ function EmbedView({ block }: { block: Extract<Block, { type: "embed" }> }) {
   );
 }
 
+function DocLinkView({ block }: { block: Extract<Block, { type: "docLink" }> }) {
+  const { kicker, title, note, links } = block.data;
+  return (
+    <section id={block.anchor} className="scroll-mt-24 bg-cream py-16">
+      <div className="mx-auto max-w-[1360px] px-5 lg:px-10">
+        <div className="reveal max-w-2xl">
+          {kicker && <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-leaf-600">{kicker}</span>}
+          {title && <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight text-midnight lg:text-4xl">{title}</h2>}
+          {note && <p className="mt-4 text-[15px] leading-relaxed text-midnight/70">{note}</p>}
+        </div>
+        <ul className="mt-10 grid gap-3">
+          {links.map((item, index) => {
+            const external = /^https?:\/\//i.test(item.href);
+            return (
+              <li key={`${item.label}-${item.href}-${index}`}>
+                <a
+                  href={item.href}
+                  {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  className="reveal flex items-center justify-between gap-4 rounded-2xl border border-midnight/10 bg-white p-5 text-midnight transition hover:-translate-y-0.5 hover:border-midnight/30"
+                >
+                  <span className="min-w-0">
+                    <span className="block break-words font-display text-lg font-bold">
+                      {item.label}
+                      {external && <span className="sr-only"> (buka di tab baru)</span>}
+                    </span>
+                    {item.note && <span className="mt-1 block break-words text-sm text-midnight/60">{item.note}</span>}
+                  </span>
+                  <span aria-hidden className="text-xl text-gold">{external ? "↗" : "→"}</span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 function GalleryView({ block }: { block: Extract<Block, { type: "gallery" }> }) {
   const { items, columns } = block.data as GalleryBlockSchemaType;
   const [index, setIndex] = useState<number | null>(null);
@@ -191,6 +229,7 @@ export function BlockRenderer({ block, onDaftar }: { block: Block; onDaftar: Daf
     case "embed": return <EmbedView block={block} />;
     case "gallery": return <GalleryView block={block} />;
     case "html": return <section id={block.anchor} className="scroll-mt-24 bg-cream py-10"><div className="rich-text mx-auto max-w-[900px] px-5 lg:px-10" dangerouslySetInnerHTML={{ __html: block.data.code }} /></section>;
+    case "docLink": return <DocLinkView block={block} />;
     case "hero": return <Hero hero={block.data} onDaftar={onDaftar} anchor={block.anchor} />;
     case "marquee": return <Marquee items={block.data} anchor={block.anchor} />;
     case "stats": return <Stats items={block.data} anchor={block.anchor} />;

@@ -54,6 +54,13 @@ describe("AnchorsController", () => {
     await expect(controller.list()).resolves.toEqual({ anchors: { aman: "valid" } });
   });
 
+  it("anchor dari blok docLink ikut terdaftar", async () => {
+    const docLink = { type: "docLink", anchor: "kurikulum", data: { kicker: "", title: "Kurikulum", note: "", links: [{ label: "Panduan", href: "https://drive.google.com/x", note: "" }] }, isVisible: true };
+    const prisma = { page: { findMany: jest.fn().mockResolvedValue([{ slug: "beranda", publishedData: snapshot([docLink]) }]) } };
+    const controller = new AnchorsController(prisma as any);
+    await expect(controller.list()).resolves.toEqual({ anchors: { kurikulum: "beranda" } });
+  });
+
   it("anchor bernama constructor tetap terdaftar", async () => {
     const prisma = {
       page: {

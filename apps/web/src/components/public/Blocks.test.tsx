@@ -81,6 +81,25 @@ describe("BlockRenderer", () => {
     expect(document.getElementById("profil")).toBeTruthy();
   });
 
+  it("merender tautan dokumen eksternal di tab baru", () => {
+    render(<BlockRenderer block={block({ id: "b13", type: "docLink", data: { kicker: "Akademik · Kurikulum", title: "Kurikulum", note: "", links: [{ label: "Panduan Kurikulum 2026/2027", href: "https://drive.google.com/file/d/x", note: "PDF" }] }, isVisible: true, anchor: "kurikulum" })} onDaftar={noop} />);
+    expect(document.getElementById("kurikulum")).toBeTruthy();
+    expect(screen.getByText("Akademik · Kurikulum")).toBeTruthy();
+    expect(screen.getByText("Kurikulum").tagName).toBe("H2");
+    const link = screen.getByText("Panduan Kurikulum 2026/2027").closest("a") as HTMLAnchorElement;
+    expect(link.getAttribute("href")).toBe("https://drive.google.com/file/d/x");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(screen.getByText("PDF")).toBeTruthy();
+  });
+
+  it("tautan dokumen internal tidak membuka tab baru", () => {
+    render(<BlockRenderer block={block({ id: "b14", type: "docLink", data: { links: [{ label: "Ke Profil", href: "/profil" }] }, isVisible: true })} onDaftar={noop} />);
+    const link = screen.getByText("Ke Profil").closest("a") as HTMLAnchorElement;
+    expect(link.getAttribute("target")).toBeNull();
+    expect(link.getAttribute("rel")).toBeNull();
+  });
+
   it("membuat indeks pencarian dari blok", () => {
     const entries = buildBlockIndex(
       [block({ id: "b6", type: "heading", data: { text: "Kurikulum Baru", level: 2, align: "left" }, isVisible: true, anchor: "kurikulum" })],
@@ -90,6 +109,17 @@ describe("BlockRenderer", () => {
     expect(entries[0].group).toBe("Akademik");
     expect(entries[0].href).toBe("/#kurikulum");
     expect(entries[0].text).toContain("Kurikulum Baru");
+  });
+
+  it("indeks pencarian tidak memuat href tautan", () => {
+    const entries = buildBlockIndex(
+      [block({ id: "b8", type: "docLink", data: { kicker: "Akademik", title: "Kurikulum", note: "", links: [{ label: "Panduan", href: "https://drive.google.com/rahasia", note: "" }] }, isVisible: true, anchor: "kurikulum" })],
+      [],
+      "beranda",
+    );
+    expect(entries[0].text).toContain("Kurikulum");
+    expect(entries[0].text).toContain("Panduan");
+    expect(entries[0].text).not.toContain("drive.google.com");
   });
 
   it("indeks memakai slug halaman selain beranda", () => {

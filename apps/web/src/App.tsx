@@ -9,6 +9,7 @@ import { api } from "./lib/api";
 import { scrollOrResolve } from "./lib/anchors";
 import { slugFromPath, useAdminRoute, usePathname } from "./lib/router";
 import { SiteProvider, useSite } from "./lib/site";
+import { useSystemTexts } from "./lib/systemTexts";
 
 const AdminPage = lazy(() => import("./components/AdminPage").then((module) => ({ default: module.AdminPage })));
 
@@ -42,6 +43,8 @@ function Screen({ title, message, action }: { title: string; message: string; ac
 
 function PublicApp() {
   const site = useSite();
+  const texts = useSystemTexts();
+  const { titleSuffix, notFoundTitle, errorTitle } = texts;
   const pathname = usePathname();
   const slug = slugFromPath(pathname);
   const [page, setPage] = useState<PublicPage | null>(null);
@@ -59,12 +62,10 @@ function PublicApp() {
         if (!result) {
           setPage(null);
           setState("notfound");
-          document.title = "Halaman tidak ditemukan · TPB UNU Purwokerto";
           return;
         }
         setPage(result);
         setState("ready");
-        document.title = result.seoTitle || `${result.title} · TPB UNU Purwokerto`;
         let meta = document.querySelector('meta[name="description"]');
         if (!meta) {
           meta = document.createElement("meta");
@@ -79,6 +80,12 @@ function PublicApp() {
   }, [slug]);
 
   useEffect(() => {
+    if (state === "notfound") document.title = `${notFoundTitle} · ${titleSuffix}`;
+    else if (state === "error") document.title = `${errorTitle} · ${titleSuffix}`;
+    else if (state === "ready" && page) document.title = page.seoTitle || `${page.title} · ${titleSuffix}`;
+  }, [state, page, notFoundTitle, errorTitle, titleSuffix]);
+
+  useEffect(() => {
     const onHash = () => scrollOrResolve(slugFromPath(window.location.pathname), window.location.hash);
     window.addEventListener("hashchange", onHash);
     window.addEventListener("tpb:navigate", onHash);
@@ -89,19 +96,19 @@ function PublicApp() {
   }, []);
 
   if (site.status === "loading" || state === "loading") {
-    return <div className="grid min-h-screen place-items-center bg-cream text-midnight/60"><p className="animate-pulse">Memuat konten…</p></div>;
+    return <div className="grid min-h-screen place-items-center bg-cream text-midnight/60"><p className="animate-pulse">{texts.loading}</p></div>;
   }
   if (site.status === "empty") {
     return <Screen title="Konten belum dikonfigurasi" message="Atur seluruh konten situs melalui Panel Admin." action={{ label: "Buka Panel Admin", href: "#admin" }} />;
   }
   if (site.status === "error" || !site.settings) {
-    return <Screen title="Gagal memuat situs" message={site.message ?? "Terjadi kesalahan saat memuat pengaturan situs."} action={{ label: "Coba lagi", href: window.location.href }} />;
+    return <Screen title={texts.errorTitle} message={site.message ?? texts.errorBody} action={{ label: "Coba lagi", href: window.location.href }} />;
   }
   if (state === "notfound") {
-    return <Screen title="404 — Halaman tidak ditemukan" message="Periksa kembali alamat yang Anda tuju." action={{ label: "Kembali ke Beranda", href: "/" }} />;
+    return <Screen title={texts.notFoundTitle} message={texts.notFoundBody} action={{ label: texts.backLabel, href: "/" }} />;
   }
   if (state === "error" || !page) {
-    return <Screen title="Gagal memuat halaman" message="Terjadi kesalahan saat memuat konten halaman." action={{ label: "Muat ulang", href: window.location.href }} />;
+    return <Screen title={texts.errorTitle} message={texts.errorBody} action={{ label: "Muat ulang", href: window.location.href }} />;
   }
 
   const settings = site.settings;

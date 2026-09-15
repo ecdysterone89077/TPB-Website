@@ -1,4 +1,4 @@
-import { BlockSchema, BlocksSchema, CtaSchema, FooterSchema, HeroSchema, PageInputSchema, NavigationInputSchema, RichTextSchema, SiteContentSchema } from "@tpb/contracts";
+import { BlockSchema, BlocksSchema, CtaSchema, FooterSchema, HeroSchema, PageInputSchema, NavigationInputSchema, RichTextSchema, SiteContentSchema, SiteSettingsSchema } from "@tpb/contracts";
 import { sanitizeBlock, sanitizeHtml } from "./sanitize";
 
 const heading = (text: string) => ({ type: "heading", data: { text, level: 2, align: "left" } });
@@ -110,6 +110,59 @@ describe("validasi tautan blok", () => {
     expect(BlockSchema.safeParse({ type: "video", data: { url: "" } }).success).toBe(true);
     expect(BlockSchema.safeParse({ type: "video", data: { url: "https://" } }).success).toBe(false);
     expect(BlockSchema.safeParse({ type: "video", data: { url: "https://www.youtube.com/watch?v=abc" } }).success).toBe(true);
+  });
+});
+
+describe("blok docLink", () => {
+  it("menerima tautan dokumen dan mengisi default", () => {
+    const parsed = BlockSchema.parse({ type: "docLink", data: { links: [{ label: "Panduan Kurikulum", href: "https://drive.google.com/file/d/x" }] } });
+    expect(parsed.type).toBe("docLink");
+    if (parsed.type !== "docLink") throw new Error("tipe blok salah");
+    expect(parsed.data.kicker).toBe("");
+    expect(parsed.data.title).toBe("");
+    expect(parsed.data.note).toBe("");
+    expect(parsed.data.links[0].note).toBe("");
+  });
+
+  it("menolak daftar kosong, label kosong, tautan tidak aman, dan lebih dari 50 tautan", () => {
+    expect(BlockSchema.safeParse({ type: "docLink", data: { links: [] } }).success).toBe(false);
+    expect(BlockSchema.safeParse({ type: "docLink", data: { links: [{ label: "", href: "#x" }] } }).success).toBe(false);
+    expect(BlockSchema.safeParse({ type: "docLink", data: { links: [{ label: "X", href: "javascript:alert(1)" }] } }).success).toBe(false);
+    expect(BlockSchema.safeParse({ type: "docLink", data: { links: Array.from({ length: 51 }, (_, index) => ({ label: `L${index}`, href: "#x" })) } }).success).toBe(false);
+  });
+
+  it("menerima anchor dan tautan internal", () => {
+    const parsed = BlockSchema.parse({
+      type: "docLink",
+      anchor: "kurikulum",
+      data: { kicker: "Akademik · Kurikulum", title: "Kurikulum", note: "", links: [{ label: "Panduan Kurikulum 2026/2027", href: "#kurikulum", note: "" }] },
+    });
+    expect(parsed.anchor).toBe("kurikulum");
+  });
+});
+
+describe("SiteSettingsSchema texts", () => {
+  const base = {
+    brand: { kicker: "", name: "TPB", org: "UNU", logoUrl: "" },
+    pmbLink: "#pmb",
+    footer: {
+      newsletterTitle: "N", infoTitle: "I", quickLinksTitle: "T", galleryTitle: "G", submitLabel: "Kirim",
+      socials: { facebook: "", twitter: "", youtube: "", linkedin: "" },
+      contact: { phone: "", email: "a@b.test", address: "Purwokerto" },
+      quickLinks: [], copyright: "", tagline: "",
+    },
+  };
+
+  it("tetap kompatibel tanpa texts dan menerima texts parsial", () => {
+    expect(SiteSettingsSchema.safeParse(base).success).toBe(true);
+    const parsed = SiteSettingsSchema.parse({ ...base, texts: { loading: "Menyiapkan…", pmb: { submitLabel: "Daftar" } } });
+    expect(parsed.texts?.loading).toBe("Menyiapkan…");
+    expect(parsed.texts?.pmb?.submitLabel).toBe("Daftar");
+  });
+
+  it("menolak teks melebihi batas", () => {
+    expect(SiteSettingsSchema.safeParse({ ...base, texts: { titleSuffix: "x".repeat(161) } }).success).toBe(false);
+    expect(SiteSettingsSchema.safeParse({ ...base, texts: { pmb: { submitLabel: "x".repeat(81) } } }).success).toBe(false);
   });
 });
 

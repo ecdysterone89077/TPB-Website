@@ -74,7 +74,7 @@ export function MediaPicker({ open, onClose, onSelect }: { open: boolean; onClos
   );
 }
 
-type FieldProps = { spec: FieldSpec; value: unknown; onChange: (value: unknown) => void };
+type FieldProps = { spec: FieldSpec; value: unknown; onChange: (value: unknown) => void; id?: string };
 
 export function ListText({ spec, value, onChange }: FieldProps) {
   const items = Array.isArray(value) ? (value as string[]) : [];
@@ -163,21 +163,21 @@ function TableEditor({ value, onChange }: { value: unknown; onChange: (value: un
   );
 }
 
-export function FieldInput({ spec, value, onChange }: FieldProps) {
+export function FieldInput({ spec, value, onChange, id }: FieldProps) {
   const [picker, setPicker] = useState(false);
 
   if (spec.kind === "textarea") {
-    return <textarea className="admin-textarea" rows={3} value={asString(value)} placeholder={spec.placeholder ?? spec.hint} onChange={(event) => onChange(event.target.value)} />;
+    return <textarea id={id} className="admin-textarea" rows={3} maxLength={spec.maxLength} value={asString(value)} placeholder={spec.placeholder ?? spec.hint} onChange={(event) => onChange(event.target.value)} />;
   }
   if (spec.kind === "number") {
-    return <input type="number" className="admin-input" value={Number.isFinite(Number(value)) ? Number(value) : 0} onChange={(event) => onChange(event.target.value === "" ? 0 : Number(event.target.value))} />;
+    return <input id={id} type="number" className="admin-input" value={Number.isFinite(Number(value)) ? Number(value) : 0} onChange={(event) => onChange(event.target.value === "" ? 0 : Number(event.target.value))} />;
   }
   if (spec.kind === "boolean") {
     return <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={value === true} onChange={(event) => onChange(event.target.checked)} />{spec.hint ?? "Ya"}</label>;
   }
   if (spec.kind === "select") {
     return (
-      <select className="admin-input" value={asString(value)} onChange={(event) => { const raw = event.target.value; onChange(/^\d+$/.test(raw) && spec.options?.some((o) => o.value === raw) ? Number(raw) : raw); }}>
+      <select id={id} className="admin-input" value={asString(value)} onChange={(event) => { const raw = event.target.value; onChange(/^\d+$/.test(raw) && spec.options?.some((o) => o.value === raw) ? Number(raw) : raw); }}>
         {(spec.options ?? []).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
     );
@@ -187,7 +187,7 @@ export function FieldInput({ spec, value, onChange }: FieldProps) {
     return (
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <input className="admin-input flex-1" value={src} placeholder="URL gambar atau /media/... " onChange={(event) => onChange(event.target.value)} />
+          <input id={id} className="admin-input flex-1" value={src} placeholder="URL gambar atau /media/... " onChange={(event) => onChange(event.target.value)} />
           <button type="button" onClick={() => setPicker(true)} className="button-secondary">Pilih dari Media</button>
           {src && <button type="button" onClick={() => onChange("")} className="button-danger">Kosongkan</button>}
         </div>
@@ -215,5 +215,5 @@ export function FieldInput({ spec, value, onChange }: FieldProps) {
       </div>
     );
   }
-  return <input className="admin-input w-full" value={asString(value)} placeholder={spec.placeholder ?? spec.hint} onChange={(event) => onChange(event.target.value)} />;
+  return <input id={id} className="admin-input w-full" maxLength={spec.maxLength} value={asString(value)} placeholder={spec.placeholder ?? spec.hint} onChange={(event) => onChange(event.target.value)} />;
 }

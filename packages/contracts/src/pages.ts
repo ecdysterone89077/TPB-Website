@@ -108,9 +108,45 @@ export type NavRecord = {
 
 /* -------------------------------------------------------------- pengaturan */
 
+export const SystemTextsSchema = z
+  .object({
+    loading: z.string().max(200),
+    notFoundTitle: z.string().max(200),
+    notFoundBody: z.string().max(500),
+    backLabel: z.string().max(80),
+    errorTitle: z.string().max(200),
+    errorBody: z.string().max(500),
+    collectionError: z.string().max(300),
+    collectionEmpty: z.string().max(300),
+    newsAllTab: z.string().max(80),
+    searchPlaceholder: z.string().max(300),
+    titleSuffix: z.string().max(160),
+    pmb: z
+      .object({
+        title: z.string().max(160),
+        doneTitle: z.string().max(160),
+        doneBody: z.string().max(300),
+        namePlaceholder: z.string().max(160),
+        emailPlaceholder: z.string().max(160),
+        phonePlaceholder: z.string().max(160),
+        schoolPlaceholder: z.string().max(160),
+        programPlaceholder: z.string().max(160),
+        messagePlaceholder: z.string().max(160),
+        submitLabel: z.string().max(80),
+        sendingLabel: z.string().max(80),
+        cancelLabel: z.string().max(80),
+        closeLabel: z.string().max(80),
+      })
+      .partial()
+      .optional(),
+  })
+  .partial();
+export type SystemTexts = z.infer<typeof SystemTextsSchema>;
+
 export const SiteSettingsSchema = z.object({
   brand: SiteContentSchema.shape.brand,
   footer: SiteContentSchema.shape.footer,
   pmbLink: SiteContentSchema.shape.pmbLink,
+  texts: SystemTextsSchema.optional(),
 });
 export type SiteSettings = z.infer<typeof SiteSettingsSchema>;

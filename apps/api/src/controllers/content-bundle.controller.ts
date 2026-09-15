@@ -6,35 +6,11 @@ import { JwtAuthGuard, Roles, RolesGuard, type RequestUser } from "../auth";
 import { parse } from "../zod";
 import { sanitizeBlock } from "../sanitize";
 import { buildNavTree, countNavTree, createNavTree } from "../nav.util";
+import { samePublishedSnapshot } from "../json.util";
 
 type AuthRequest = Request & { user?: RequestUser };
 
 const SETTINGS_KEY = "main";
-
-// MySQL menormalkan urutan key JSON, jadi perbandingan snapshot harus kanonik.
-const canonicalJson = (value: unknown): string => {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  if (value && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b));
-    return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-};
-
-// Snapshot terbit dari panel menyimpan id blok; impor tidak. Abaikan id saat membandingkan.
-const withoutBlockIds = (value: unknown): unknown => {
-  if (!value || typeof value !== "object") return value;
-  const snapshot = value as { blocks?: unknown[] };
-  if (!Array.isArray(snapshot.blocks)) return value;
-  return {
-    ...snapshot,
-    blocks: snapshot.blocks.map((block) => {
-      if (!block || typeof block !== "object") return block;
-      const entries = Object.entries(block as Record<string, unknown>).filter(([key]) => key !== "id");
-      return Object.fromEntries(entries);
-    }),
-  };
-};
 
 @Controller("admin/content")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -69,14 +45,20 @@ export class ContentBundleController {
       nav: buildNavTree(navRows),
       pages: pages.map((page) => {
         const published = page.status === "published" ? PageRevisionDataSchema.safeParse(page.publishedData) : null;
+        if (page.status === "published" && !published?.success) {
+          throw new BadRequestException(`Halaman "${page.title}" berstatus terbit tanpa snapshot valid — perbaiki dan terbitkan ulang sebelum ekspor.`);
+        }
+        const meta = published?.success
+          ? published.data.page
+          : { title: page.title, seoTitle: page.seoTitle ?? "", seoDescription: page.seoDescription ?? "", ogImage: page.ogImage ?? null };
         return {
-          title: page.title,
+          title: meta.title,
           slug: page.slug,
-          seoTitle: page.seoTitle ?? "",
-          seoDescription: page.seoDescription ?? "",
-          ...(page.ogImage ? { ogImage: page.ogImage } : {}),
+          seoTitle: meta.seoTitle ?? "",
+          seoDescription: meta.seoDescription ?? "",
+          ...(meta.ogImage ? { ogImage: meta.ogImage } : {}),
           status: page.status,
-          blocks: (page.blocks.length ? page.blocks : published?.success ? published.data.blocks : []).map(exportBlock),
+          blocks: (published?.success ? published.data.blocks : page.blocks).map(exportBlock),
         };
       }),
       posts: posts.map((post) => ({
@@ -138,9 +120,7 @@ export class ContentBundleController {
                   blocks,
                 })
               : null;
-            const unchangedPublished = snapshot !== null
-              && existing !== null
-              && canonicalJson(withoutBlockIds(existing.publishedData)) === canonicalJson(withoutBlockIds(snapshot));
+            const unchangedPublished = snapshot !== null && existing !== null && samePublishedSnapshot(existing.publishedData, snapshot);
             const data = {
               title: input.title,
               seoTitle: input.seoTitle || null,
