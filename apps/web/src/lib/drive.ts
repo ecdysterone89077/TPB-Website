@@ -23,13 +23,47 @@ export function extractDriveId(url: string): string | null {
   }
 }
 
+/** Optimasi tampilan: minta ukuran lebih kecil dari CDN Unsplash (URL tidak diubah di data). */
+export function optimizeRemoteImage(url: string): string {
+  try {
+    const u = new URL(url);
+    if (/(^|\.)unsplash\.com$/i.test(u.hostname) || u.hostname === "images.unsplash.com") {
+      const width = Number(u.searchParams.get("w") ?? 0);
+      if (!width || width > 1200) {
+        u.searchParams.set("w", "1200");
+        if (!u.searchParams.get("q")) u.searchParams.set("q", "60");
+        return u.toString();
+      }
+    }
+  } catch {
+    return url;
+  }
+  return url;
+}
+
+/** Varian srcset untuk CDN Unsplash agar layar kecil mengunduh gambar lebih ringan. */
+export function imageSrcSet(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes("unsplash.com")) return undefined;
+    return [640, 960, 1280].map((width) => {
+      const variant = new URL(parsed.toString());
+      variant.searchParams.set("w", String(width));
+      if (!variant.searchParams.get("q")) variant.searchParams.set("q", "60");
+      return `${variant.toString()} ${width}w`;
+    }).join(", ");
+  } catch {
+    return undefined;
+  }
+}
+
 export function driveCandidates(url: string): string[] {
   const id = extractDriveId(url);
-  if (!id) return [url];
+  if (!id) return [optimizeRemoteImage(url)];
   const base = `https://lh3.googleusercontent.com/d/${id}`;
   return [
+    `${base}=w1200`,
     base,
-    `${base}=w1000`,
     `https://drive.google.com/thumbnail?id=${id}&sz=w1000`,
     `https://drive.google.com/uc?export=view&id=${id}`,
     `https://drive.usercontent.google.com/download?id=${id}&export=view`,

@@ -33,15 +33,24 @@ dari production build. Alasan: build prod yang diukur, bukan dev server.
 
 ## Terukur, belum ditegakkan (ratchet: tidak boleh turun, toleransi 0.5%)
 
-| Metrik | Hari ini (2026-09-13) | Arah |
+Diperbarui 2026-09-15 (owner) setelah migrasi page builder. Target tidak berubah;
+angka di bawah adalah hasil pengukuran ulang pada checkout ini.
+
+| Metrik | Hari ini (2026-09-15) | Arah |
 |---|---|---|
-| Coverage proyek API (lines) | 75.2% (`jest --coverage`, 32 test lolos, ~26 dtk) | tidak boleh turun |
-| Coverage proyek web (lines) | 8.4% (vitest 5 + jsdom + RTL, 3 test lolos, ~3 dtk) | tidak boleh turun |
-| Bundle web (main JS) | 345.7 kB (gzip 98.2 kB) | tidak boleh tumbuh |
+| Coverage proyek API (lines) | 87.4% (`jest --coverage`, 135 test lolos, ~20 dtk) | tidak boleh turun |
+| Coverage proyek web (lines) | 21.3% (`vitest run --coverage`, 28 test lolos, ~26 dtk) | tidak boleh turun |
+| Bundle web (main JS) | 284.2 kB (gzip 85.2 kB) — chunk admin terpisah (lazy, dimuat hanya di `#admin`) | tidak boleh tumbuh |
 | Typecheck + lint | lolos semua paket | harus tetap lolos |
 | Floor scan (supresi/stub/skip) | bersih | harus tetap bersih |
-| LCP halaman utama | 2782ms (skor perf 0.95) | turun ke ≤ 2500ms |
-| A11y halaman utama | 2 temuan: `color-contrast` (1 node `p.text-red-600`), `landmark-one-main` hilang (skor 0.85) | nol critical/serious |
+| LCP halaman utama | ~3900ms (median 3 run lighthouse mobile pada preview 4173; FCP ~1400ms, TBT ~450ms, CLS 0) | turun ke ≤ 2500ms |
+| A11y halaman utama | 0 temuan critical/serious (skor 100, 3 run) | nol critical/serious |
+
+Catatan LCP: baseline lama 2782ms diukur pada situs 1-endpoint `GET /v1/content`
+yang merender 19 modul. Setelah migrasi blok, halaman mengambil 3 endpoint
+(settings/nav/page) dan merender 28 blok termasuk gambar hero eksternal, sehingga
+LCP naik. Target ≤2500ms tetap berlaku; kandidat perbaikan berikutnya: gambar hero
+disajikan dari `MEDIA_DIR` (bukan CDN eksternal) dan/atau prerender rute utama.
 
 ## Temuan awal osv-scanner (warn, perbaikan terpisah — bukan pengecualian)
 

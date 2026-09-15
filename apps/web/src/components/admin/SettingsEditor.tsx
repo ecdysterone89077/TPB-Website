@@ -37,6 +37,8 @@ function NavEditor({ items, onChange }: { items: NavItemInput[]; onChange: (item
     const next = structuredClone(items) as NavItemInput[];
     let list = next;
     for (const index of path.slice(0, -1)) list = (list[index].children ??= []) as NavItemInput[];
+    const target = list[path[path.length - 1]];
+    if (!window.confirm(`Hapus menu "${target.label}" beserta sub-menunya?`)) return;
     list.splice(path[path.length - 1], 1);
     onChange(next);
   };
@@ -90,6 +92,7 @@ export function SettingsEditor() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [dirty, setDirty] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,6 +101,7 @@ export function SettingsEditor() {
       const [loadedSettings, loadedNav] = await Promise.all([api.getSettings(), api.getNav()]);
       setSettings(loadedSettings);
       setNav(loadedNav);
+      setDirty(false);
     } catch (e: any) {
       setError(e?.message ?? "Gagal memuat pengaturan.");
     } finally {
@@ -105,6 +109,16 @@ export function SettingsEditor() {
     }
   }, []);
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+
+  const updateSettings = (next: SiteSettings) => { setSettings(next); setDirty(true); };
+  const updateNav = (items: NavItemInput[]) => { setNav(items); setDirty(true); };
 
   const save = async () => {
     if (!settings) return;
@@ -116,6 +130,7 @@ export function SettingsEditor() {
       const savedNav = await api.saveNav(nav);
       setSettings(saved);
       setNav(savedNav);
+      setDirty(false);
       setNotice("Pengaturan dan menu tersimpan — langsung berlaku di situs.");
     } catch (e: any) {
       setError(e?.message ?? "Gagal menyimpan pengaturan.");
@@ -144,7 +159,7 @@ export function SettingsEditor() {
       {fields.map((field) => (
         <div key={field.key} className={field.kind === "listObject" || field.kind === "textarea" || field.kind === "image" ? "md:col-span-2" : ""}>
           <label className="mb-1 block text-xs font-semibold text-slate-600">{field.label}</label>
-          <FieldInput spec={field} value={getIn(data, field.key)} onChange={(value) => setSettings(setIn(structuredClone(data), field.key, value) as unknown as SiteSettings)} />
+          <FieldInput spec={field} value={getIn(data, field.key)} onChange={(value) => updateSettings(setIn(structuredClone(data), field.key, value) as unknown as SiteSettings)} />
         </div>
       ))}
     </div>
@@ -154,7 +169,8 @@ export function SettingsEditor() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-slate-900">Pengaturan Situs</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {dirty && <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">Ada perubahan belum disimpan</span>}
           <button onClick={load} className="button-secondary">Muat ulang</button>
           <button onClick={save} disabled={busy} className="button-primary disabled:opacity-50">{busy ? "Menyimpan…" : "Simpan pengaturan"}</button>
         </div>
@@ -169,7 +185,7 @@ export function SettingsEditor() {
 
       <section className="rounded-2xl bg-white p-5 shadow-sm">
         <h2 className="mb-3 font-bold text-slate-900">Menu Navigasi</h2>
-        <NavEditor items={nav} onChange={setNav} />
+        <NavEditor items={nav} onChange={updateNav} />
       </section>
 
       <section className="rounded-2xl bg-white p-5 shadow-sm">
