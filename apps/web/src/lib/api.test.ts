@@ -40,6 +40,39 @@ describe("api.listPublic", () => {
 
     await expect(api.getStats()).rejects.toThrow("gagal");
   });
+
+  it("menampilkan path field yang gagal validasi dari issues", async () => {
+    stubFetch(
+      { message: "Data tidak valid.", issues: [{ path: "dosen.people.3.photo", message: "String must contain at least 1 character(s)" }] },
+      400,
+    );
+
+    await expect(api.saveAkademik({} as never)).rejects.toThrow(/dosen\.people\.3\.photo/);
+  });
+
+  it("menormalisasi path array dan memotong maksimal 3 issues", async () => {
+    stubFetch(
+      {
+        message: "Data tidak valid.",
+        issues: [
+          { path: ["dosen", "people", 3, "photo"], message: "salah" },
+          { path: "b", message: "x" },
+          { path: "c", message: "y" },
+          { path: "d", message: "z" },
+        ],
+      },
+      400,
+    );
+
+    try {
+      await api.saveAkademik({} as never);
+      throw new Error("seharusnya gagal");
+    } catch (error: any) {
+      expect(error.message).toContain("dosen.people.3.photo: salah");
+      expect(error.message).toContain("c: y");
+      expect(error.message).not.toContain("d: z");
+    }
+  });
 });
 
 describe("api.listAll", () => {

@@ -11,7 +11,18 @@ const authHeaders = (): Record<string, string> => (accessToken ? { Authorization
 function errMsg(r: Response, body: any): string {
   if (typeof body === "string") return body;
   const m = body?.message ?? body?.error;
-  if (typeof m === "string") return m;
+  if (typeof m === "string") {
+    const issues = Array.isArray(body?.issues) ? body.issues : [];
+    const detail = issues
+      .slice(0, 3)
+      .map((i: any) => {
+        const p = Array.isArray(i?.path) ? i.path.join(".") : i?.path;
+        const label = p === undefined || p === null || p === "" ? "(root)" : String(p);
+        return `${label}: ${i?.message || "tidak valid"}`;
+      })
+      .join("; ");
+    return detail ? `${m} ${detail}` : m;
+  }
   if (Array.isArray(m)) return m.map((x: any) => (typeof x === "string" ? x : x?.message)).filter(Boolean).join(", ");
   return `Permintaan gagal (HTTP ${r.status}).`;
 }
