@@ -22,8 +22,9 @@ export function RichTextEditor({ value, onChange }: { value: RichText; onChange:
     const previous = editor.getAttributes("link").href as string | undefined;
     const url = window.prompt("Alamat tautan (https://… atau /halaman atau #anchor)", previous ?? "https://");
     if (url === null) return;
-    if (url.trim() === "") { editor.chain().focus().unsetLink().run(); return; }
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url.trim() }).run();
+    const trimmed = url.trim();
+    if (trimmed === "" || trimmed === "https://") { editor.chain().focus().unsetLink().run(); return; }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: trimmed }).run();
   };
 
   return (

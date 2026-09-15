@@ -64,7 +64,7 @@ export const BLOCK_SPECS: Record<BlockType, BlockSpec> = {
       img("thumb", "Gambar pratinjau (opsional)"),
       t("caption", "Keterangan (opsional)"),
     ],
-    defaults: () => ({ url: "https://www.youtube.com/watch?v=", mode: "popup", thumb: "", caption: "" }),
+    defaults: () => ({ url: "", mode: "popup", thumb: "", caption: "" }),
   },
   button: {
     label: "Tombol", icon: "🔗", group: "Teks & Media", description: "Tombol dengan tautan.",

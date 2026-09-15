@@ -31,4 +31,23 @@ describe("spesifikasi blok", () => {
     expect(Array.isArray(specFor("stats").defaults())).toBe(true);
     expect(Array.isArray(specFor("hero").defaults())).toBe(false);
   });
+
+  it("setiap kolom non-custom ada di data default (mencegah kolom salah kunci)", () => {
+    for (const type of BlockTypeSchema.options) {
+      const spec = specFor(type);
+      const defaults = spec.defaults() as Record<string, unknown>;
+      if (Array.isArray(defaults)) continue;
+      for (const field of spec.fields) {
+        if (field.kind === "custom") continue;
+        expect(Object.prototype.hasOwnProperty.call(defaults, field.key), `${type}.${field.key} tidak ada di default`).toBe(true);
+      }
+    }
+  });
+
+  it("blok tabel memakai data root {headers, rows}", () => {
+    const defaults = specFor("table").defaults() as { headers?: unknown; rows?: unknown };
+    expect(Array.isArray(defaults.headers)).toBe(true);
+    expect(Array.isArray(defaults.rows)).toBe(true);
+    expect(specFor("table").fields[0].custom).toBe("table");
+  });
 });

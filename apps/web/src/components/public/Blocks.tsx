@@ -51,6 +51,7 @@ function VideoView({ block }: { block: Extract<Block, { type: "video" }> }) {
     document.body.style.overflow = "hidden";
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
   }, [open]);
+  if (!url) return null;
   const yt = youtubeId(url);
   const ig = instagramEmbed(url);
   const preview = thumb || (yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : "");

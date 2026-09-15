@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { BlockSchema, BlocksSchema, type Block, type BlockType } from "@tpb/contracts";
+import { BlockSchema, type Block, type BlockType } from "@tpb/contracts";
 import { api } from "../../lib/api";
 import { BlockRenderer } from "../public/Blocks";
 import { GROUP_ORDER, BLOCK_SPECS, blockLabel } from "./builder/specs";
 import type { FieldSpec } from "./builder/specs";
 import { FieldInput, ListObject, ListText } from "./builder/fields";
 import { RichTextEditor } from "./builder/RichTextEditor";
+import { humanizeServerError, validateBlocks } from "./builder/validation";
 
 type AdminPageData = Awaited<ReturnType<typeof api.getAdminPage>>;
 
@@ -45,10 +46,10 @@ function CustomField({ field, value, onChange }: { field: FieldSpec; value: unkn
 
 function BlockForm({ block, onChange }: { block: Block; onChange: (next: Block) => void }) {
   const spec = BLOCK_SPECS[block.type];
-  const isArrayData = Array.isArray(block.data);
-  const data = (isArrayData ? block.data : block.data) as Record<string, unknown>;
-  const setField = (key: string, value: unknown) => onChange({ ...block, data: { ...(isArrayData ? {} : data), [key]: value } } as Block);
-  const setArray = (value: unknown) => onChange({ ...block, data: value } as Block);
+  const isWholeData = Array.isArray(block.data) || (spec.fields.length === 1 && spec.fields[0].custom === "table");
+  const data = (isWholeData ? {} : block.data) as Record<string, unknown>;
+  const setField = (key: string, value: unknown) => onChange({ ...block, data: { ...data, [key]: value } } as Block);
+  const setWhole = (value: unknown) => onChange({ ...block, data: value } as Block);
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {spec.fields.map((field) => (
@@ -56,10 +57,10 @@ function BlockForm({ block, onChange }: { block: Block; onChange: (next: Block) 
           <label className="mb-1 block text-xs font-semibold text-slate-600">{field.label}</label>
           {field.kind === "richText" ? (
             <RichTextEditor value={data[field.key] as never} onChange={(doc) => setField(field.key, doc)} />
-          ) : field.kind === "custom" && field.custom !== "table" ? (
-            <CustomField field={field} value={isArrayData ? block.data : data[field.key]} onChange={isArrayData ? setArray : (value) => setField(field.key, value)} />
+          ) : field.kind === "custom" ? (
+            <CustomField field={field} value={isWholeData ? block.data : data[field.key]} onChange={isWholeData ? setWhole : (value) => setField(field.key, value)} />
           ) : (
-            <FieldInput spec={field} value={(isArrayData ? undefined : data[field.key]) as unknown} onChange={(value) => setField(field.key, value)} />
+            <FieldInput spec={field} value={data[field.key]} onChange={(value) => setField(field.key, value)} />
           )}
           {field.hint && field.kind !== "html" && field.kind !== "video" && <p className="mt-1 text-xs text-slate-500">{field.hint}</p>}
         </div>
@@ -103,7 +104,7 @@ function SortableBlock({ block, index, total, expanded, hasError, onToggle, onMo
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-600">Nama jangkar / link (opsional)</label>
-              <input className="admin-input w-full" placeholder="mis. dosen" value={block.anchor ?? ""} onChange={(event) => onChange({ ...block, anchor: event.target.value.trim() === "" ? undefined : event.target.value.trim() } as Block)} />
+              <input className="admin-input w-full" placeholder="mis. dosen" value={block.anchor ?? ""} onChange={(event) => { const normalized = event.target.value.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""); onChange({ ...block, anchor: normalized === "" ? undefined : normalized } as Block); }} />
               <p className="mt-1 text-xs text-slate-500">Dipakai sebagai tujuan tautan (mis. /beranda#dosen).</p>
             </div>
           </div>
@@ -155,7 +156,7 @@ export function PageBuilder() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [expanded, setExpanded] = useState<number | null>(0);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [palette, setPalette] = useState(false);
   const [preview, setPreview] = useState(false);
   const [meta, setMeta] = useState({ title: "", slug: "", seoTitle: "", seoDescription: "" });
@@ -178,7 +179,7 @@ export function PageBuilder() {
       setBlocks(data.blocks);
       setMeta({ title: data.title, slug: data.slug, seoTitle: data.seoTitle ?? "", seoDescription: data.seoDescription ?? "" });
       setDirty(false);
-      setExpanded(0);
+      setExpandedKey(data.blocks[0]?.id ?? "blok-0");
     } catch (e: any) {
       setError(e?.message ?? "Gagal memuat halaman.");
     } finally {
@@ -214,35 +215,38 @@ export function PageBuilder() {
     setDirty(true);
   };
 
-  const validationIssues = useMemo(() => {
-    const parsed = BlocksSchema.safeParse(blocks);
-    if (parsed.success) return [];
-    return parsed.error.issues.slice(0, 5).map((issue) => {
-      const index = typeof issue.path[0] === "number" ? issue.path[0] : -1;
-      const block = index >= 0 ? blocks[index] : undefined;
-      return `${block ? blockLabel(block.type) : "Blok"} #${index + 1}: ${issue.message}`;
-    });
-  }, [blocks]);
+  const blockKeyAt = (block: Block, index: number) => block.id ?? `blok-${index}`;
 
-  const save = async () => {
-    if (!page) return;
-    if (validationIssues.length) {
-      setError(`Periksa dulu: ${validationIssues.join(" | ")}`);
-      return;
+  const validation = useMemo(() => validateBlocks(blocks), [blocks]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+
+  const save = async (): Promise<boolean> => {
+    if (!page) return false;
+    if (!validation.ok) {
+      setError(`Periksa dulu: ${validation.messages.join(" | ")}`);
+      return false;
     }
     setBusy(true);
     setError("");
     setNotice("");
     try {
-      const metaPage = await api.updatePage(page.id, { title: meta.title, slug: meta.slug, seoTitle: meta.seoTitle, seoDescription: meta.seoDescription });
+      const metaPage = await api.updatePage(page.id, { title: meta.title, slug: meta.slug, seoTitle: meta.seoTitle, seoDescription: meta.seoDescription, ogImage: page.ogImage });
       const saved = await api.savePageBlocks(page.id, blocks);
       setBlocks(saved);
       setPage({ ...metaPage, blocks: saved });
       setDirty(false);
       setNotice("Draf tersimpan. Klik \"Terbitkan\" agar tampil di situs.");
       await loadPages();
+      return true;
     } catch (e: any) {
-      setError(e?.message ?? "Gagal menyimpan.");
+      setError(humanizeServerError(e?.message ?? "Gagal menyimpan.", blocks));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -250,18 +254,18 @@ export function PageBuilder() {
 
   const publish = async () => {
     if (!page) return;
-    if (dirty || validationIssues.length) {
-      await save();
+    if (dirty || !validation.ok) {
+      const saved = await save();
+      if (!saved) return;
     }
     setBusy(true);
     setError("");
     setNotice("");
     try {
-      const summary = await api.publishPage(page.id);
+      await api.publishPage(page.id);
       setPage((current) => (current ? { ...current, status: "published" } : current));
       setNotice("Halaman diterbitkan — perubahan sudah tampil di situs.");
       await loadPages();
-      void summary;
     } catch (e: any) {
       setError(e?.message ?? "Gagal menerbitkan.");
     } finally {
@@ -340,6 +344,8 @@ export function PageBuilder() {
       setBlocks(restored.blocks);
       setMeta({ title: restored.title, slug: restored.slug, seoTitle: restored.seoTitle ?? "", seoDescription: restored.seoDescription ?? "" });
       setRevisions(null);
+      setDirty(false);
+      setExpandedKey(restored.blocks[0]?.id ?? null);
       setNotice("Versi lama dipulihkan (status draf). Periksa lalu terbitkan kembali.");
     } catch (e: any) {
       setError(e?.message ?? "Gagal memulihkan versi.");
@@ -424,13 +430,13 @@ export function PageBuilder() {
                 <div className="space-y-3">
                   {blocks.map((block, index) => (
                     <SortableBlock
-                      key={block.id ?? `blok-${index}`}
+                      key={blockKeyAt(block, index)}
                       block={block}
                       index={index}
                       total={blocks.length}
-                      expanded={expanded === index}
-                      hasError={false}
-                      onToggle={() => setExpanded(expanded === index ? null : index)}
+                      expanded={expandedKey === blockKeyAt(block, index)}
+                      hasError={validation.errorIndexes.has(index)}
+                      onToggle={() => setExpandedKey(expandedKey === blockKeyAt(block, index) ? null : blockKeyAt(block, index))}
                       onMove={(direction) => { setBlocks(arrayMove(blocks, index, index + direction)); setDirty(true); }}
                       onDuplicate={() => { const copy = BlockSchema.parse({ ...block, id: undefined }) as Block; setBlocks([...blocks.slice(0, index + 1), copy, ...blocks.slice(index + 1)]); setDirty(true); }}
                       onRemove={() => { if (window.confirm(`Hapus bagian "${blockLabel(block.type)}"?`)) { setBlocks(blocks.filter((_, i) => i !== index)); setDirty(true); } }}
@@ -445,7 +451,7 @@ export function PageBuilder() {
         </>
       )}
 
-      <Palette open={palette} onClose={() => setPalette(false)} onAdd={(type) => { setBlocks((current) => [...current, newBlock(type)]); setDirty(true); setExpanded(blocks.length); }} />
+      <Palette open={palette} onClose={() => setPalette(false)} onAdd={(type) => { setBlocks((current) => [...current, newBlock(type)]); setDirty(true); setExpandedKey(null); }} />
 
       {preview && page && (
         <div className="fixed inset-0 z-[108] overflow-auto bg-slate-900/70 p-4" onClick={() => setPreview(false)}>
