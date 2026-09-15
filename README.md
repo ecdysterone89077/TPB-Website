@@ -125,6 +125,8 @@ git checkout --force develop
 git reset --hard origin/develop
 pnpm install --frozen-lockfile
 pnpm db:migrate:deploy
+pnpm content:migrate:write
+pnpm content:migrate:reconcile
 pnpm --filter @tpb/contracts build
 pnpm --filter @tpb/api build
 VITE_API_URL="https://staging-api.example.test/v1" pnpm --filter @tpb/web build
@@ -140,6 +142,8 @@ cd /path/to/repo
 git fetch --tags && git checkout <tag>
 pnpm install --frozen-lockfile
 pnpm db:migrate:deploy
+pnpm content:migrate:write
+pnpm content:migrate:reconcile
 pnpm --filter @tpb/contracts build
 pnpm --filter @tpb/api build
 VITE_API_URL="https://api.example.test/v1" pnpm --filter @tpb/web build
@@ -250,18 +254,17 @@ Pastikan direktori `MEDIA_DIR`:
 
 ## Alur Admin
 
-1. Buka `/#admin` — selama tabel `users` (MySQL) kosong, form **Bootstrap Admin** muncul (sekali pakai; paritas gerbang "akun pertama" dari sistem lama).
-2. Login → dashboard penuh: **Dashboard, Konten Modular (19 modul + editor `legacy`: Branding, Navigasi, Hero, Marquee, Statistik, Tentang Prodi, Pilar Keilmuan, Riset & Inovasi, Pengabdian Masyarakat, Kehidupan Mahasiswa, Profil, Akademik, Penelitian, Pengabdian, Kemahasiswaan, Berita Kicker, CTA, Footer, PMB Link), Berita, PMB, Galeri & Media, Pelanggan, Pengguna, Audit Log** — tiap menu punya endpoint sendiri `PUT /v1/{brand,navigation,hero,marquee,stats,about,programs,research,community,studentLife,profil,akademik,penelitian,pengabdian,kemahasiswaan,news,cta,footer,pmbLink}` dengan validasi Zod slice. `GET /v1/content` tetap sebagai aggregator 19 modul (kompatibel legacy) dan `PUT /v1/content` masih ada tapi deprecated (sync ke `site_modules`).
-3. **Konten Modular harus diisi dari dashboard** — situs publik menampilkan state "belum dikonfigurasi" sampai tiap modul tersimpan di `site_modules` (fallback ke `site_content.key=main` legacy jika kosong). Tidak ada fallback/default content di kode (kebijakan: *tidak boleh ada data static inline / fallback / hardcode menempel di file code*). Field gambar pada 19 modul konten (`logoUrl`, `image`, `img`, `photo`) boleh diisi `""` atau `null` bila ingin tampil tanpa gambar; nilai berspasi saja atau lebih dari 2000 karakter tetap ditolak. Berita (`image`) menerima URL http(s), path absolut, atau `null`; galeri (`image`) wajib diisi.
-4. **Migrasi antar-environment via panel** — tombol `Export JSON` di Konten Modular mengunduh bundle 19 modul (`content`); berita, galeri, dan media dikelola lewat menunya masing-masing. Tombol `Import JSON` per-modul memuat file `.json` (bundle `tpb-modular-*.json`, objek full 19 key, atau JSON mentah modul) ke textarea lalu `Simpan` → `PUT /v1/{key}`; untuk migrasi massal antar-database pakai `tools/supabase-migration` (`pnpm import` pecah `content.json` → 19 baris `site_modules` + legacy). Data mengalir antar-database saat runtime — tanpa seeder di repo.
-5. **Galeri & Media** — tiap item punya judul, jenis (gambar/video), kategori kustom, caption, tautan, dan thumbnail kustom. Menu Galeri di situs membuka popup lightbox (grid → putar langsung di tempat). Video YouTube memakai thumbnail otomatis; video Instagram memakai thumbnail yang diunggah manual (Instagram tidak menyediakan thumbnail publik).
-6. **Pencarian** — tombol Cari di menu mencari keyword di seluruh konten situs dan berita.
+1. Buka `/#admin` — selama tabel `users` (MySQL) kosong, form **Bootstrap Admin** muncul (sekali pakai).
+2. Login → dashboard: **Dashboard, Konten Halaman, Berita, PMB, Media, Pelanggan, Pengguna, Audit Log**. Menu Berita/PMB/Pelanggan/Media/Pengguna/Audit berfungsi penuh; menu **Konten Halaman** menampilkan informasi bahwa editor visual blok hadir pada fase berikutnya.
+3. **Struktur konten baru = halaman + blok** (lihat bagian Page Builder). Situs publik dirender sepenuhnya dari blok halaman terbit; tidak ada fallback/default content di kode (kebijakan: *tidak boleh ada data static inline / fallback / hardcode menempel di file code*).
+4. **Media** — unggah JPEG/PNG/GIF/WebP/PDF lalu salin URL-nya untuk dipakai pada blok gambar/video/galeri. Blok **galeri** menampilkan grid + popup lightbox (video YouTube/Instagram diputar di tempat); blok **video** mendukung mode popup.
+5. **Pencarian** — tombol Cari di menu mencari keyword di seluruh blok halaman dan berita.
 
 ---
 
-## Page Builder (fondasi — Fase 1)
+## Page Builder (halaman + blok)
 
-Model konten baru berbasis blok: tabel `pages`, `blocks`, `nav_items`, `site_settings`, `page_revisions`. Kontrak validasi di `packages/contracts` (`BlockSchema`: 12 blok generik + 28 preset bergaya situs lama; `PageInputSchema`, `NavigationInputSchema`, `SiteSettingsSchema`). Blok `html` (mode lanjutan) disanitasi allowlist di server (`apps/api/src/sanitize.ts`).
+Model konten: tabel `pages`, `blocks`, `nav_items`, `site_settings`, `page_revisions`. Kontrak validasi di `packages/contracts` (`BlockSchema`: 12 blok generik — termasuk rich text, gambar, video popup, galeri lightbox, tombol, accordion, tabel, embed, HTML kustom — + 28 preset bergaya situs sebelumnya). Blok `html` (mode lanjutan) disanitasi allowlist di server (`apps/api/src/sanitize.ts`). Tautan divalidasi (menolak `javascript:`/protocol-relative), menu maks 3 tingkat, id blok unik.
 
 | Endpoint | Akses | Keterangan |
 |---|---|---|
@@ -273,15 +276,18 @@ Model konten baru berbasis blok: tabel `pages`, `blocks`, `nav_items`, `site_set
 | `POST /v1/admin/pages/:id/publish` / `unpublish` | ADMIN+EDITOR | terbit (minimal 1 blok) + snapshot revisi |
 | `GET /v1/admin/pages/:id/revisions`, `POST /v1/admin/pages/:id/revisions/:revisionId/restore` | ADMIN+EDITOR | riwayat & pemulihan; restore mengarsipkan keadaan sekarang lalu kembali draft |
 
-Migrasi konten lama (dry-run default; idempoten + reconcile):
+Alamat halaman memakai path asli (`/`, `/profil`, dst.); SPA fallback disediakan `vercel.json` dan konfigurasi Nginx (`try_files ... /index.html`) — lihat bagian deployment.
+
+### Migrasi & pembersihan tabel lama
 
 ```bash
-pnpm content:migrate            # pratinjau rencana blok
+pnpm content:migrate            # pratinjau rencana blok (dry-run, tanpa menulis)
 pnpm content:migrate:write      # terapkan ke halaman "beranda"
 pnpm content:migrate:reconcile  # verifikasi blok/menu/settings vs sumber
+pnpm content:drop-legacy -- --yes   # hapus tabel legacy (site_modules, site_content, site_stats, gallery_items)
 ```
 
-Fase 2 akan memindahkan render publik ke blok, menjalankan migrasi pada database nyata, lalu menghapus tabel modul lama.
+**Penting untuk produksi:** drop tabel lama **bukan** bagian dari `prisma migrate deploy` — jalankan urutan di atas secara manual setelah backup database, karena tabel harus dihapus *setelah* data dimigrasikan dan `reconcile` lulus. Skrip drop menolak berjalan bila halaman `beranda` belum punya blok.
 
 ## Migrasi Data dari Supabase
 
@@ -292,15 +298,15 @@ cd tools/supabase-migration
 SUPABASE_URL=https://<ref>.supabase.co \
 SUPABASE_SERVICE_ROLE_KEY=<key> pnpm export
 
-# Import ke MySQL (idempoten) — content.json dipecah otomatis ke 19 baris site_modules + legacy site_content
+# Import ke MySQL (idempoten) — content.json dipetakan ke halaman "beranda" + blok, settings, dan menu
 pnpm import
 
-# Verifikasi: bandingkan jumlah + checksum (posts, subscribers, pmb, gallery, content, site_modules 19 key, stats)
+# Verifikasi: hitungan baris posts, subscribers, pmb, blok halaman, menu, settings
 pnpm reconcile
 ```
 
-- `import` memvalidasi `content.json` via `SiteContentSchema` lalu `upsert` tiap key ke `site_modules` (brand, navigation, hero, marquee, stats, about, programs, research, community, studentLife, profil, akademik, penelitian, pengabdian, kemahasiswaan, news, cta, footer, pmbLink) + tetap `site_content.key=main` untuk aggregator fallback.
-- `reconcile` cek hash per-modul `site_modules.*` vs `content.json` + hitungan baris.
+- `import` memetakan `content.json` (bersama `stats.json` dan `gallery.json`) memakai logika yang sama dengan `tools/content-migration` → menulis halaman `beranda` + blok, menu (`nav_items`), dan pengaturan global; data lama bila ada akan tertimpa. Tabel legacy `site_modules`/`site_content`/`site_stats`/`gallery_items` sudah tidak dipakai.
+- `reconcile` memverifikasi hitungan baris untuk posts/subscribers/pmb/blok/menu/settings.
 
 Service-role key **hanya** melalui variabel environment — tidak pernah masuk repo, tidak pernah diekspos ke frontend.
 

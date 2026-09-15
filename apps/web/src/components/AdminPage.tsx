@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { api, type PaginationMeta } from "../lib/api";
-import { videoThumbUrl } from "./public/Gallery";
 import type {
   AdminUser,
   AuditEntry,
   DashboardSummary,
-  GalleryItem,
   MediaAsset,
   Post,
   Registration,
@@ -13,7 +11,7 @@ import type {
   Subscriber,
 } from "@tpb/contracts";
 
-type View = "dashboard" | "content" | "posts" | "pmb" | "gallery" | "subs" | "users" | "audit";
+type View = "dashboard" | "content" | "posts" | "pmb" | "media" | "subs" | "users" | "audit";
 type RoleAwareUser = AdminUser & { role: Role };
 
 type PostForm = {
@@ -29,36 +27,12 @@ type PostForm = {
 
 const PAGE_SIZE = 50;
 
-type ContentModuleKey = "brand" | "navigation" | "hero" | "marquee" | "stats" | "about" | "programs" | "research" | "community" | "studentLife" | "profil" | "akademik" | "penelitian" | "pengabdian" | "kemahasiswaan" | "news" | "cta" | "footer" | "pmbLink" | "legacy";
-const CONTENT_MODULES: { key: ContentModuleKey; label: string; hint: string }[] = [
-  { key: "brand", label: "Branding (Logo)", hint: "kicker, name, org, logoUrl" },
-  { key: "navigation", label: "Navigasi", hint: "menu + dropdown (profil, akademik, dll.)" },
-  { key: "hero", label: "Hero (Home)", hint: "badge, line1/highlight/line2, subtitle, buttons, image" },
-  { key: "marquee", label: "Marquee", hint: "teks berjalan" },
-  { key: "stats", label: "Statistik", hint: "value, suffix, label" },
-  { key: "about", label: "Tentang Prodi", hint: "kicker, title, body, points" },
-  { key: "programs", label: "Pilar Keilmuan", hint: "cards" },
-  { key: "research", label: "Riset & Inovasi", hint: "areas, metrics" },
-  { key: "community", label: "Pengabdian Masyarakat", hint: "items" },
-  { key: "studentLife", label: "Kehidupan Mahasiswa", hint: "cards" },
-  { key: "profil", label: "Profil", hint: "sejarah, visiMisi, struktur, sambutan" },
-  { key: "akademik", label: "Akademik", hint: "kurikulum, kalender, dosen, lab" },
-  { key: "penelitian", label: "Penelitian", hint: "publikasi, jurnal, kolaborasi" },
-  { key: "pengabdian", label: "Pengabdian", hint: "programDesa, kemitraan, kegiatan" },
-  { key: "kemahasiswaan", label: "Kemahasiswaan", hint: "himpunan, beasiswa, prestasi, alumni" },
-  { key: "news", label: "Berita (Kicker)", hint: "kicker, title" },
-  { key: "cta", label: "CTA", hint: "title, body, primary/secondary" },
-  { key: "footer", label: "Footer", hint: "kontak, sosmed, quickLinks" },
-  { key: "pmbLink", label: "PMB Link", hint: "URL pendaftaran" },
-  { key: "legacy", label: "Legacy JSON (semua)", hint: "gabungan 19 modul — hanya untuk export" },
-];
-
 const NAV_ALL: { id: View; label: string; roles: Role[] }[] = [
   { id: "dashboard", label: "Dashboard", roles: ["ADMIN"] },
-  { id: "content", label: "Konten Modular", roles: ["ADMIN", "EDITOR"] },
+  { id: "content", label: "Konten Halaman", roles: ["ADMIN", "EDITOR"] },
   { id: "posts", label: "Berita", roles: ["ADMIN", "EDITOR"] },
   { id: "pmb", label: "PMB", roles: ["ADMIN", "OPERATOR"] },
-  { id: "gallery", label: "Galeri & Media", roles: ["ADMIN", "EDITOR", "OPERATOR"] },
+  { id: "media", label: "Media", roles: ["ADMIN", "EDITOR", "OPERATOR"] },
   { id: "subs", label: "Pelanggan", roles: ["ADMIN", "OPERATOR"] },
   { id: "users", label: "Pengguna", roles: ["ADMIN"] },
   { id: "audit", label: "Audit Log", roles: ["ADMIN"] },
@@ -101,10 +75,10 @@ export function AdminPage() {
     <main className="flex-1 min-w-0 p-4 md:p-10 overflow-x-auto">
       <div className="md:hidden mb-5 flex gap-2 overflow-x-auto pb-1">{nav.map((item) => <button key={item.id} onClick={() => setView(item.id)} className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm ${view === item.id ? "bg-slate-900 text-white" : "bg-white text-slate-600"}`}>{item.label}</button>)}</div>
       {view === "dashboard" && <DashboardView />}
-      {view === "content" && <ContentView user={user} />}
+      {view === "content" && <ContentPlaceholder />}
       {view === "posts" && <PostsView user={user} />}
       {view === "pmb" && <PmbView user={user} />}
-      {view === "gallery" && <GalleryMediaView user={user} />}
+      {view === "media" && <MediaView />}
       {view === "subs" && <SubscribersView />}
       {view === "users" && <UsersView user={user} />}
       {view === "audit" && <AuditView />}
@@ -139,156 +113,111 @@ function DashboardView() {
   return <Section title="Dashboard" action={<button onClick={load} className="button-secondary">Muat ulang</button>}><AsyncState loading={!summary && !error} error={error}>{summary && <><div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{cards.map(([label, value]) => <Panel key={label}><p className="text-3xl font-bold text-slate-900">{value}</p><p className="text-sm text-slate-500">{label}</p></Panel>)}</div><Panel><h2 className="font-semibold mb-3 text-slate-900">Aktivitas Terakhir</h2><AuditList entries={summary.audit} /></Panel></>}</AsyncState></Section>;
 }
 
-function ContentView({ user }: { user: RoleAwareUser }) {
-  const [selected, setSelected] = useState<ContentModuleKey>("brand");
-  const [draft, setDraft] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
 
-  const loadModule = useCallback(async (key: ContentModuleKey) => {
-    setLoading(true); setError(""); setNotice("");
-    try {
-      let data: unknown = null;
-      if (key === "brand") data = await api.getBrand();
-      else if (key === "navigation") data = await api.getNavigation();
-      else if (key === "hero") data = await api.getHero();
-      else if (key === "marquee") data = await api.getMarquee();
-      else if (key === "stats") data = await api.getContentStats();
-      else if (key === "about") data = await api.getAbout();
-      else if (key === "programs") data = await api.getPrograms();
-      else if (key === "research") data = await api.getResearch();
-      else if (key === "community") data = await api.getCommunity();
-      else if (key === "studentLife") data = await api.getStudentLife();
-      else if (key === "profil") data = await api.getProfil();
-      else if (key === "akademik") data = await api.getAkademik();
-      else if (key === "penelitian") data = await api.getPenelitian();
-      else if (key === "pengabdian") data = await api.getPengabdian();
-      else if (key === "kemahasiswaan") data = await api.getKemahasiswaan();
-      else if (key === "news") data = await api.getNews();
-      else if (key === "cta") data = await api.getCta();
-      else if (key === "footer") data = await api.getFooter();
-      else if (key === "pmbLink") data = await api.getPmbLink();
-      else if (key === "legacy") data = await api.getContent();
-      setDraft(data == null ? "" : JSON.stringify(data, null, 2));
-    } catch (e: any) { setError(e?.message ?? "Gagal memuat modul."); }
-    finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => { loadModule(selected); }, [selected, loadModule]);
-
-  const save = async (event: FormEvent) => {
-    event.preventDefault(); setSaving(true); setError(""); setNotice("");
-    try {
-      const parsed = JSON.parse(draft);
-      if (selected === "brand") await api.saveBrand(parsed);
-      else if (selected === "navigation") await api.saveNavigation(parsed);
-      else if (selected === "hero") await api.saveHero(parsed);
-      else if (selected === "marquee") await api.saveMarquee(parsed);
-      else if (selected === "stats") await api.saveContentStats(parsed);
-      else if (selected === "about") await api.saveAbout(parsed);
-      else if (selected === "programs") await api.savePrograms(parsed);
-      else if (selected === "research") await api.saveResearch(parsed);
-      else if (selected === "community") await api.saveCommunity(parsed);
-      else if (selected === "studentLife") await api.saveStudentLife(parsed);
-      else if (selected === "profil") await api.saveProfil(parsed);
-      else if (selected === "akademik") await api.saveAkademik(parsed);
-      else if (selected === "penelitian") await api.savePenelitian(parsed);
-      else if (selected === "pengabdian") await api.savePengabdian(parsed);
-      else if (selected === "kemahasiswaan") await api.saveKemahasiswaan(parsed);
-      else if (selected === "news") await api.saveNews(parsed);
-      else if (selected === "cta") await api.saveCta(parsed);
-      else if (selected === "footer") await api.saveFooter(parsed);
-      else if (selected === "pmbLink") await api.savePmbLink(parsed);
-      else if (selected === "legacy") await api.saveContent(parsed);
-      setNotice(`Modul ${selected} tersimpan.`);
-      await loadModule(selected);
-    } catch (e: any) { setError(e instanceof SyntaxError ? "Format JSON tidak valid." : e?.message ?? "Gagal menyimpan."); }
-    finally { setSaving(false); }
-  };
-
-  const stamp = () => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; };
-  const fileRef = useRef<HTMLInputElement>(null);
-  const importFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      let data: unknown = parsed;
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && "content" in (parsed as any)) {
-        const c = (parsed as any).content;
-        if (selected === "legacy") data = c;
-        else if (c && typeof c === "object" && selected in c) data = (c as any)[selected];
-        else if (selected in (parsed as any)) data = (parsed as any)[selected];
-      } else if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && selected in (parsed as any) && selected !== "legacy") {
-        data = (parsed as any)[selected];
-      }
-      setDraft(JSON.stringify(data, null, 2));
-      setNotice(`File ${file.name} dimuat untuk ${selected} — klik Simpan.`);
-      setError("");
-    } catch (err: any) {
-      setError(err instanceof SyntaxError ? "File JSON tidak valid." : err?.message ?? "Gagal import.");
-    } finally {
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  };
-  const exportAll = async () => {
-    try {
-      const content = await api.getContent();
-      if (!content) { setError("Konten belum ada untuk diekspor."); return; }
-      const bundle = { version: 2, exportedAt: new Date().toISOString(), content };
-      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `tpb-modular-${stamp()}.json`; a.click(); URL.revokeObjectURL(url);
-      setNotice("Diekspor (modular).");
-    } catch (e: any) { setError(e?.message ?? "Gagal ekspor."); }
-  };
-
+function ContentPlaceholder() {
   return (
-    <Section
-      title="Konten Modular"
-      action={
-        <div className="flex gap-2">
-          <input ref={fileRef} type="file" accept=".json,application/json" onChange={importFile} className="hidden" />
-          <button onClick={() => fileRef.current?.click()} className="button-secondary">Import JSON</button>
-          <button onClick={exportAll} className="button-secondary">Export JSON</button>
-          <button onClick={() => loadModule(selected)} className="button-secondary">Muat ulang</button>
-        </div>
-      }
-    >
-      <div className="mb-4 flex flex-wrap gap-2">
-        <select value={selected} onChange={(e) => setSelected(e.target.value as ContentModuleKey)} className="admin-input">
-          {CONTENT_MODULES.map((m) => (
-            <option key={m.key} value={m.key}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-        <span className="text-xs text-slate-500 self-center">{CONTENT_MODULES.find((m) => m.key === selected)?.hint}</span>
-      </div>
-      <Notice error={error} success={notice} />
-      <AsyncState loading={loading} error={error} empty={false}>
-        <form onSubmit={save} className="space-y-4">
-          <Panel>
-            <p className="text-sm text-slate-500 mb-3">
-              Modul <b>{selected}</b> — edit JSON untuk modul ini saja. Simpan akan `PUT /v1/{selected}` dan otomatis sync ke legacy `site_content`.
-            </p>
-            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={20} className="admin-textarea font-mono text-xs" aria-label={`JSON ${selected}`} />
-          </Panel>
-          <div className="flex gap-2">
-            <button disabled={saving || !roleCan(user, ["ADMIN"])} className="button-primary disabled:opacity-50">
-              {saving ? "Menyimpan..." : `Simpan ${selected}`}
-            </button>
-            <button type="button" onClick={() => loadModule(selected)} className="button-secondary">
-              Buang perubahan
-            </button>
-          </div>
-        </form>
-      </AsyncState>
+    <Section title="Konten Halaman">
+      <Panel>
+        <h2 className="font-semibold text-slate-900">Editor konten baru sedang disiapkan</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Mulai versi ini, seluruh isi situs disusun dari blok (halaman) dan bukan lagi 19 modul JSON.
+          Editor visual yang ramah (pilih template, isi kolom, atur urutan, terbitkan) hadir pada fase berikutnya.
+        </p>
+        <p className="mt-2 text-sm text-slate-600">Sementara ini, berita, PMB, pelanggan, media, pengguna, dan audit tetap dapat dikelola dari menu di samping.</p>
+      </Panel>
     </Section>
   );
 }
+
+function MediaView() {
+  const [media, setMedia] = useState<MediaAsset[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
+  const [offset, setOffset] = useState(0);
+
+  const load = useCallback(async (off = 0) => {
+    setLoading(true);
+    setError("");
+    try {
+      const r = await api.listMedia({ limit: PAGE_SIZE, offset: off });
+      setMedia(r.media);
+      setPagination(r.pagination);
+      setOffset(off);
+    } catch (e: any) {
+      setError(e?.message ?? "Gagal memuat media.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const upload = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!file) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const asset = await api.uploadMedia(file);
+      setFile(null);
+      setNotice(`Media berhasil diunggah: ${asset.url}`);
+      await load(offset);
+    } catch (e: any) {
+      setError(e?.message ?? "Gagal mengunggah media.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (item: MediaAsset) => {
+    if (!window.confirm("Hapus media ini?")) return;
+    try {
+      await api.removeMedia(item.id);
+      await load(offset);
+    } catch (e: any) {
+      setError(e?.message ?? "Gagal menghapus media.");
+    }
+  };
+
+  return (
+    <Section title="Media" action={<button onClick={() => load(offset)} className="button-secondary">Muat ulang</button>}>
+      <Notice error={error} success={notice} />
+      <Panel>
+        <h2 className="font-semibold mb-4">Unggah media (JPEG, PNG, GIF, WebP, PDF)</h2>
+        <form onSubmit={upload} className="flex flex-wrap items-center gap-3">
+          <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf" onChange={(event: ChangeEvent<HTMLInputElement>) => setFile(event.target.files?.[0] ?? null)} className="text-sm" />
+          <button disabled={busy || !file} className="button-primary disabled:opacity-50">{busy ? "Mengunggah..." : "Unggah"}</button>
+        </form>
+        <p className="mt-2 text-xs text-slate-500">URL hasil unggahan dapat dipakai pada blok gambar/video galeri.</p>
+      </Panel>
+      <Panel>
+        <AsyncState loading={loading} error={error} empty={!media.length && !pagination}>
+          {media.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {media.map((item) => (
+                <div key={item.id} className="rounded-lg border border-slate-200 p-3">
+                  {item.mimeType.startsWith("image/") ? <img src={item.url} alt={item.alt || item.filename} className="h-36 w-full rounded object-cover" loading="lazy" /> : <div className="grid h-36 place-items-center rounded bg-slate-100 text-xs text-slate-500">Dokumen PDF</div>}
+                  <p className="mt-2 truncate text-sm font-medium text-slate-800" title={item.filename}>{item.filename}</p>
+                  <p className="truncate text-xs text-slate-500">{item.url}</p>
+                  <div className="mt-2 flex gap-2">
+                    <button onClick={() => navigator.clipboard?.writeText(item.url)} className="button-secondary">Salin URL</button>
+                    <button onClick={() => remove(item)} className="button-danger">Hapus</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {pagination && <PaginationControls pagination={pagination} onPageChange={(off) => load(off)} />}
+        </AsyncState>
+      </Panel>
+    </Section>
+  );
+}
+
 function PostsView({ user }: { user: RoleAwareUser }) {
   const [posts, setPosts] = useState<Post[]>([]); const [form, setForm] = useState<PostForm>(emptyPost()); const [editing, setEditing] = useState<string | null>(null); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [notice, setNotice] = useState("");
   const [pagination, setPagination] = useState<PaginationMeta | null>(null); const [offset, setOffset] = useState(0);
@@ -308,21 +237,6 @@ function PmbView({ user }: { user: RoleAwareUser }) {
   const updateStatus = async (row: Registration, status: Registration["status"]) => { try { await api.setPmbStatus(row.id, status); await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal mengubah status."); } };
   const remove = async (id: string) => { if (!window.confirm("Hapus pendaftar ini?")) return; try { await api.removePmb(id); await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal menghapus pendaftar."); } };
   return <Section title="PMB" action={<button onClick={() => load(offset)} className="button-secondary">Muat ulang</button>}><Notice error={error} /><Panel><AsyncState loading={loading} error={error} empty={!rows.length && !pagination}>{rows.length > 0 && <div className="space-y-3">{rows.map((row) => <div key={row.id} className="border border-slate-200 rounded-lg p-4"><div className="flex flex-wrap justify-between gap-3"><div><p className="font-semibold text-slate-900">{row.name}</p><p className="text-sm text-slate-600">{row.email} - {row.phone}</p><p className="text-xs text-slate-500">{row.school || "-"} - {row.program || "-"} - {formatDate(row.createdAt)}</p>{row.message && <p className="mt-2 text-sm text-slate-600">{row.message}</p>}</div><div className="flex items-start gap-2"><select value={row.status} onChange={(e) => updateStatus(row, e.target.value as Registration["status"])} className="admin-input"><option value="baru">Baru</option><option value="diproses">Diproses</option><option value="diterima">Diterima</option><option value="ditolak">Ditolak</option></select>{roleCan(user, ["ADMIN"]) && <button onClick={() => remove(row.id)} className="button-danger">Hapus</button>}</div></div></div>)}</div>}{pagination && <PaginationControls pagination={pagination} onPageChange={(off) => load(off)} />}</AsyncState></Panel></Section>;
-}
-
-function GalleryMediaView({ user }: { user: RoleAwareUser }) {
-  const [gallery, setGallery] = useState<GalleryItem[]>([]); const [media, setMedia] = useState<MediaAsset[]>([]); const [galleryForm, setGalleryForm] = useState({ image: "", caption: "", link: "", title: "", kind: "image", category: "", thumb: "" }); const [file, setFile] = useState<File | null>(null); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [notice, setNotice] = useState("");
-  const [galleryPage, setGalleryPage] = useState<PaginationMeta | null>(null); const [galleryOffset, setGalleryOffset] = useState(0);
-  const [mediaPage, setMediaPage] = useState<PaginationMeta | null>(null); const [mediaOffset, setMediaOffset] = useState(0);
-  const loadGallery = useCallback(async (off = 0) => { try { const r = await api.listGallery({ limit: PAGE_SIZE, offset: off }); setGallery(r.gallery); setGalleryPage(r.pagination); setGalleryOffset(off); } catch (e: any) { setError(e?.message ?? "Gagal memuat galeri."); } }, []);
-  const loadMedia = useCallback(async (off = 0) => { try { const r = await api.listMedia({ limit: PAGE_SIZE, offset: off }); setMedia(r.media); setMediaPage(r.pagination); setMediaOffset(off); } catch (e: any) { setError(e?.message ?? "Gagal memuat media."); } }, []);
-  const load = useCallback(async () => { setLoading(true); setError(""); try { await Promise.all([loadGallery(), loadMedia()]); } finally { setLoading(false); } }, [loadGallery, loadMedia]);
-  useEffect(() => { load(); }, [load]);
-  const addGallery = async (event: FormEvent) => { event.preventDefault(); setBusy(true); setError(""); setNotice(""); try { await api.addGallery({ image: galleryForm.image, caption: galleryForm.caption || undefined, link: galleryForm.link || null, kind: galleryForm.kind as "image" | "video", title: galleryForm.title || undefined, category: galleryForm.category || undefined, thumb: galleryForm.thumb || null }); setGalleryForm({ image: "", caption: "", link: "", title: "", kind: "image", category: "", thumb: "" }); setNotice("Item galeri tersimpan."); await loadGallery(galleryOffset); } catch (e: any) { setError(e?.message ?? "Gagal menambah galeri."); } finally { setBusy(false); } };
-  const upload = async (event: FormEvent) => { event.preventDefault(); if (!file) return; setBusy(true); setError(""); setNotice(""); try { const asset = await api.uploadMedia(file); setFile(null); setNotice("Media berhasil diunggah: " + asset.url); await loadMedia(mediaOffset); } catch (e: any) { setError(e?.message ?? "Gagal mengunggah media."); } finally { setBusy(false); } };
-  const remove = async (id: string) => { if (!window.confirm("Hapus item galeri ini?")) return; try { await api.removeGallery(id); await loadGallery(galleryOffset); } catch (e: any) { setError(e?.message ?? "Gagal menghapus galeri."); } };
-  const removeMedia = async (item: MediaAsset) => { if (!window.confirm("Hapus media ini?")) return; try { await api.removeMedia(item.id); await loadMedia(mediaOffset); } catch (e: any) { setError(e?.message ?? "Gagal menghapus media."); } };
-  return <Section title="Galeri & Media" action={<button onClick={load} className="button-secondary">Muat ulang</button>}><Notice error={error} success={notice} /><div className="grid xl:grid-cols-2 gap-5"><Panel><h2 className="font-semibold mb-4">Tambah galeri melalui URL</h2><form onSubmit={addGallery} className="space-y-3"><div className="flex gap-3"><input className="admin-input flex-1" placeholder="Kategori (mis. Kegiatan, Fasilitas)" value={galleryForm.category} onChange={(e) => setGalleryForm({ ...galleryForm, category: e.target.value })} /><input required className="admin-input flex-1" placeholder="Judul (opsional)" value={galleryForm.title} onChange={(e) => setGalleryForm({ ...galleryForm, title: e.target.value })} /><select className="admin-input" value={galleryForm.kind} onChange={(e) => setGalleryForm({ ...galleryForm, kind: e.target.value })} aria-label="Jenis item"><option value="image">Gambar</option><option value="video">Video</option></select></div><input className="admin-input w-full" placeholder="URL thumbnail kustom (opsional, untuk video IG tanpa thumbnail)" value={galleryForm.thumb} onChange={(e) => setGalleryForm({ ...galleryForm, thumb: e.target.value })} /><input required className="admin-input w-full" placeholder="URL gambar / ID YouTube (https://... atau /media/...)" value={galleryForm.image} onChange={(e) => setGalleryForm({ ...galleryForm, image: e.target.value })} /><input className="admin-input w-full" placeholder="Caption" value={galleryForm.caption} onChange={(e) => setGalleryForm({ ...galleryForm, caption: e.target.value })} /><input className="admin-input w-full" placeholder="URL tautan (opsional)" value={galleryForm.link} onChange={(e) => setGalleryForm({ ...galleryForm, link: e.target.value })} /><button disabled={busy} className="button-primary disabled:opacity-50">Simpan galeri</button></form><div className="mt-5 space-y-2"><AsyncState loading={loading} error={error} empty={!gallery.length && !galleryPage}>{gallery.map((item) => <div key={item.id} className="flex gap-3 items-center border-t pt-2">{(() => { const thumb = item.kind === "video" ? videoThumbUrl(item) : item.image; return thumb ? <img src={thumb} alt={item.caption || ""} className="w-14 h-14 object-cover rounded" /> : <span className="grid w-14 h-14 shrink-0 place-items-center rounded bg-gradient-to-br from-slate-700 to-slate-900 text-sm text-amber-300">▶</span>; })()}<div className="min-w-0 flex-1"><p className="text-sm truncate">{item.caption || item.image}</p><p className="text-xs text-slate-500">{formatDate(item.createdAt)}</p></div>{roleCan(user, ["ADMIN"]) && <button onClick={() => remove(item.id)} className="button-danger">Hapus</button>}</div>)}{galleryPage && <PaginationControls pagination={galleryPage} onPageChange={(off) => loadGallery(off)} />}</AsyncState></div></Panel><Panel><h2 className="font-semibold mb-4">Unggah media</h2><form onSubmit={upload} className="flex flex-wrap gap-3 items-center"><input type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} /><button disabled={!file || busy} className="button-primary disabled:opacity-50">Unggah</button></form><div className="mt-5 space-y-2"><AsyncState loading={loading} error={error} empty={!media.length && !mediaPage}>{media.map((item) => <div key={item.id} className="border-t pt-2"><a href={item.url} target="_blank" rel="noreferrer" className="text-sm text-blue-700 hover:underline break-all">{item.filename}</a><p className="text-xs text-slate-500">{item.mimeType} - {item.size} bytes - {formatDate(item.createdAt)}</p><p className="text-xs text-slate-400 break-all">{item.url}</p>{roleCan(user, ["ADMIN"]) && <button onClick={() => removeMedia(item)} className="button-danger mt-2">Hapus</button>}</div>)}{mediaPage && <PaginationControls pagination={mediaPage} onPageChange={(off) => loadMedia(off)} />}</AsyncState></div></Panel></div></Section>;
 }
 
 function SubscribersView() {

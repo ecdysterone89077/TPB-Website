@@ -1,18 +1,80 @@
 import { useEffect, useState } from "react";
-import type { NavItem, SiteContent } from "@tpb/contracts";
+import type { Block, NavItemInput, SiteContent } from "@tpb/contracts";
 import { Crest } from "./ui";
 import { SearchButton } from "./Search";
-import { openGallery } from "./Gallery";
 import { DriveImage } from "../DriveImage";
+import { navigate } from "../../lib/router";
 
-export function Header({ brand, navigation, content, onAdmin }: { brand: SiteContent["brand"]; navigation: NavItem[]; content: SiteContent; onAdmin: () => void }) {
+function handleInternal(href: string) {
+  if (href.startsWith("/")) {
+    navigate(href);
+    return true;
+  }
+  return false;
+}
+
+export function Header({ brand, navigation, blocks, onAdmin }: { brand: SiteContent["brand"]; navigation: NavItemInput[]; blocks: Block[]; onAdmin: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [mobile, setMobile] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   useEffect(() => setLogoFailed(false), [brand.logoUrl]);
   useEffect(() => { const onScroll = () => setScrolled(window.scrollY > 24); onScroll(); window.addEventListener("scroll", onScroll, { passive: true }); return () => window.removeEventListener("scroll", onScroll); }, []);
-  return <header className="fixed inset-x-0 top-0 z-50"><div className={`transition-all duration-500 ${scrolled ? "bg-cream/85 backdrop-blur-xl shadow-[0_10px_40px_-24px_rgba(14,16,68,0.6)]" : "bg-cream/0"}`}><div className="mx-auto flex max-w-[1360px] items-center gap-6 px-5 py-3.5 lg:px-10"><a href="#top" className="flex shrink-0 items-center gap-3">{brand.logoUrl && !logoFailed ? <DriveImage src={brand.logoUrl} alt={`${brand.name} logo`} className="h-11 w-11 object-contain drop-shadow-sm" onError={() => setLogoFailed(true)} /> : <Crest className="h-11 w-11 drop-shadow-sm" />}<span className="leading-none"><span className="block font-mono text-[9px] font-medium uppercase tracking-[0.32em] text-leaf-600">{brand.kicker}</span><span className="block font-display text-[15px] font-extrabold leading-tight text-midnight">{brand.name}</span><span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-midnight/55">{brand.org}</span></span></a><nav className="ml-auto hidden items-center gap-0.5 xl:flex" onMouseLeave={() => setOpen(null)}>{navigation.map((item) => <div key={item.href} className="relative" onMouseEnter={() => setOpen(item.label)}>{item.href === "/#galeri" ? <button onClick={() => openGallery()} className="rounded-full px-4 py-2.5 text-[12px] font-bold text-midnight/70 transition hover:bg-midnight/5 hover:text-midnight">{item.label}</button> : <a href={item.href} className="rounded-full px-4 py-2.5 text-[12px] font-bold text-midnight/70 transition hover:bg-midnight/5 hover:text-midnight">{item.label}</a>}{item.children?.length && open === item.label ? <div className="absolute left-1/2 top-full mt-2 w-56 -translate-x-1/2 rounded-2xl border border-midnight/10 bg-white p-2 shadow-xl">{item.children.map((child) => <a key={child.href} href={child.href} className="block rounded-xl px-3 py-2 text-sm text-midnight/70 hover:bg-cream hover:text-midnight">{child.label}</a>)}</div> : null}</div>)}<SearchButton content={content} /><button onClick={onAdmin} className="ml-3 rounded-full bg-midnight px-5 py-2.5 text-[12px] font-bold text-white transition hover:bg-midnight-700">Admin</button></nav><button onClick={() => setMobile(!mobile)} className="ml-auto rounded-full border border-midnight/15 px-4 py-2 text-xs font-bold xl:hidden" aria-expanded={mobile}>Menu</button></div>{mobile && <nav className="border-t border-midnight/10 bg-cream px-5 py-4 xl:hidden">{navigation.map((item) => <div key={item.href}>{item.href === "/#galeri" ? <button onClick={() => { setMobile(false); openGallery(); }} className="block py-2 text-sm font-bold text-midnight">{item.label}</button> : <a href={item.href} onClick={() => setMobile(false)} className="block py-2 text-sm font-bold text-midnight">{item.label}</a>}{item.children?.map((child) => <a key={child.href} href={child.href} onClick={() => setMobile(false)} className="block py-1 pl-4 text-xs text-midnight/60">{child.label}</a>)}</div>)}<div className="mt-3 flex gap-2"><SearchButton content={content} compact /><button onClick={onAdmin} className="rounded-full bg-midnight px-5 py-2.5 text-xs font-bold text-white">Admin</button></div></nav>}</div></header>;
+
+  const linkClass = "rounded-full px-4 py-2.5 text-[12px] font-bold text-midnight/70 transition hover:bg-midnight/5 hover:text-midnight";
+
+  return (
+    <header className="fixed inset-x-0 top-0 z-50">
+      <div className={`transition-all duration-500 ${scrolled ? "bg-cream/85 backdrop-blur-xl shadow-[0_10px_40px_-24px_rgba(14,16,68,0.6)]" : "bg-cream/0"}`}>
+        <div className="mx-auto flex max-w-[1360px] items-center gap-6 px-5 py-3.5 lg:px-10">
+          <a href="/" onClick={(event) => { if (handleInternal("/")) event.preventDefault(); }} className="flex shrink-0 items-center gap-3">
+            {brand.logoUrl && !logoFailed ? <DriveImage src={brand.logoUrl} alt={`${brand.name} logo`} className="h-11 w-11 object-contain drop-shadow-sm" onError={() => setLogoFailed(true)} /> : <Crest className="h-11 w-11 drop-shadow-sm" />}
+            <span className="leading-none">
+              <span className="block font-mono text-[9px] font-medium uppercase tracking-[0.32em] text-leaf-600">{brand.kicker}</span>
+              <span className="block font-display text-[15px] font-extrabold leading-tight text-midnight">{brand.name}</span>
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-midnight/55">{brand.org}</span>
+            </span>
+          </a>
+
+          <nav className="ml-auto hidden items-center gap-0.5 xl:flex" onMouseLeave={() => setOpen(null)}>
+            {navigation.map((item) => (
+              <div key={`${item.label}-${item.href}`} className="relative" onMouseEnter={() => setOpen(item.label)}>
+                <a href={item.href} onClick={(event) => { if (handleInternal(item.href)) event.preventDefault(); }} className={linkClass}>{item.label}</a>
+                {item.children?.length && open === item.label ? (
+                  <div className="absolute left-1/2 top-full mt-2 w-56 -translate-x-1/2 rounded-2xl border border-midnight/10 bg-white p-2 shadow-xl">
+                    {item.children.map((child) => (
+                      <a key={`${child.label}-${child.href}`} href={child.href} onClick={(event) => { if (handleInternal(child.href)) event.preventDefault(); }} className="block rounded-xl px-3 py-2 text-sm text-midnight/70 hover:bg-cream hover:text-midnight">{child.label}</a>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+            <SearchButton blocks={blocks} navigation={navigation} />
+            <button onClick={onAdmin} className="rounded-full bg-midnight px-4 py-2.5 text-[12px] font-bold text-white transition hover:bg-midnight-700">Admin</button>
+          </nav>
+
+          <div className="ml-auto flex items-center gap-2 xl:hidden">
+            <SearchButton blocks={blocks} navigation={navigation} compact />
+            <button onClick={() => setMobile((v) => !v)} aria-label="Menu" aria-expanded={mobile} className="rounded-full border border-midnight/15 px-4 py-2 text-xs font-bold">☰</button>
+          </div>
+        </div>
+
+        {mobile && (
+          <div className="mx-4 mb-3 rounded-2xl border border-midnight/10 bg-white p-3 shadow-xl xl:hidden">
+            {navigation.map((item) => (
+              <div key={`${item.label}-${item.href}`}>
+                <a href={item.href} onClick={(event) => { setMobile(false); if (handleInternal(item.href)) event.preventDefault(); }} className="block rounded-xl px-3 py-2 text-sm font-bold text-midnight/80 hover:bg-cream">{item.label}</a>
+                {item.children?.map((child) => (
+                  <a key={`${child.label}-${child.href}`} href={child.href} onClick={(event) => { setMobile(false); if (handleInternal(child.href)) event.preventDefault(); }} className="block rounded-xl px-6 py-2 text-sm text-midnight/60 hover:bg-cream">{child.label}</a>
+                ))}
+              </div>
+            ))}
+            <button onClick={() => { setMobile(false); onAdmin(); }} className="mt-2 w-full rounded-xl bg-midnight px-3 py-2 text-sm font-bold text-white">Panel Admin</button>
+          </div>
+        )}
+      </div>
+    </header>
+  );
 }
 
 export function Hero({ hero, onDaftar }: { hero: SiteContent["hero"]; onDaftar: () => void }) {

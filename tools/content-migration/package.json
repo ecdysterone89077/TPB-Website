@@ -8,6 +8,7 @@
     "migrate": "tsx src/migrate.ts",
     "write": "tsx src/migrate.ts --write",
     "reconcile": "tsx src/migrate.ts --reconcile",
+    "drop-legacy": "tsx src/drop-legacy.ts",
     "test": "tsx --test src/mapping.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

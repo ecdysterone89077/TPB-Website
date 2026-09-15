@@ -1,5 +1,5 @@
 import type {
-  AdminUser, AuditEntry, DashboardSummary, GalleryItem, MediaAsset, Post, Registration, SiteContent, Stat, Subscriber,
+  AdminUser, AuditEntry, DashboardSummary, MediaAsset, NavItemInput, PageSummary, Post, PublicPage, Registration, SiteSettings, Subscriber,
 } from "@tpb/contracts";
 
 const BASE = (import.meta.env.VITE_API_URL || "http://localhost:3000/v1").replace(/\/$/, "");
@@ -115,56 +115,27 @@ export const api = {
     }
   },
 
-  /* -------------------------------------------------------- content */
+  /* ------------------------------------------------------ situs (publik) */
 
-  async getContent(): Promise<SiteContent | null> {
-    const d = await request<{ content: SiteContent | null }>(`/content`);
-    return d.content;
+  async getPages(): Promise<PageSummary[]> {
+    const d = await request<{ pages: PageSummary[] }>(`/pages`);
+    return d.pages;
   },
 
-  async saveContent(content: SiteContent) {
-    return request<{ content: SiteContent }>(`/content`, jsonInit({ content }, "PUT"));
+  async getPage(slug: string): Promise<PublicPage | null> {
+    const d = await request<{ page: PublicPage | null }>(`/pages/${encodeURIComponent(slug)}`);
+    return d.page;
   },
 
-  // --- modular site_modules (Opsi B) — tiap key punya GET/PUT sendiri ---
-  async getBrand(): Promise<SiteContent["brand"] | null> { const d = await request<{ brand: SiteContent["brand"] | null }>(`/brand`); return d.brand; },
-  async saveBrand(brand: SiteContent["brand"]) { return request<{ brand: SiteContent["brand"] }>(`/brand`, jsonInit({ brand }, "PUT")); },
-  async getNavigation(): Promise<SiteContent["navigation"] | null> { const d = await request<{ navigation: SiteContent["navigation"] | null }>(`/navigation`); return d.navigation; },
-  async saveNavigation(navigation: SiteContent["navigation"]) { return request<{ navigation: SiteContent["navigation"] }>(`/navigation`, jsonInit({ navigation }, "PUT")); },
-  async getHero(): Promise<SiteContent["hero"] | null> { const d = await request<{ hero: SiteContent["hero"] | null }>(`/hero`); return d.hero; },
-  async saveHero(hero: SiteContent["hero"]) { return request<{ hero: SiteContent["hero"] }>(`/hero`, jsonInit({ hero }, "PUT")); },
-  async getMarquee(): Promise<SiteContent["marquee"] | null> { const d = await request<{ marquee: SiteContent["marquee"] | null }>(`/marquee`); return d.marquee; },
-  async saveMarquee(marquee: SiteContent["marquee"]) { return request<{ marquee: SiteContent["marquee"] }>(`/marquee`, jsonInit({ marquee }, "PUT")); },
-  async getContentStats(): Promise<SiteContent["stats"] | null> { const d = await request<{ stats: SiteContent["stats"] | null }>(`/content-stats`); return d.stats; },
-  async saveContentStats(stats: SiteContent["stats"]) { return request<{ stats: SiteContent["stats"] }>(`/content-stats`, jsonInit({ stats }, "PUT")); },
-  async getAbout(): Promise<SiteContent["about"] | null> { const d = await request<{ about: SiteContent["about"] | null }>(`/about`); return d.about; },
-  async saveAbout(about: SiteContent["about"]) { return request<{ about: SiteContent["about"] }>(`/about`, jsonInit({ about }, "PUT")); },
-  async getPrograms(): Promise<SiteContent["programs"] | null> { const d = await request<{ programs: SiteContent["programs"] | null }>(`/programs`); return d.programs; },
-  async savePrograms(programs: SiteContent["programs"]) { return request<{ programs: SiteContent["programs"] }>(`/programs`, jsonInit({ programs }, "PUT")); },
-  async getResearch(): Promise<SiteContent["research"] | null> { const d = await request<{ research: SiteContent["research"] | null }>(`/research`); return d.research; },
-  async saveResearch(research: SiteContent["research"]) { return request<{ research: SiteContent["research"] }>(`/research`, jsonInit({ research }, "PUT")); },
-  async getCommunity(): Promise<SiteContent["community"] | null> { const d = await request<{ community: SiteContent["community"] | null }>(`/community`); return d.community; },
-  async saveCommunity(community: SiteContent["community"]) { return request<{ community: SiteContent["community"] }>(`/community`, jsonInit({ community }, "PUT")); },
-  async getStudentLife(): Promise<SiteContent["studentLife"] | null> { const d = await request<{ studentLife: SiteContent["studentLife"] | null }>(`/student-life`); return d.studentLife; },
-  async saveStudentLife(studentLife: SiteContent["studentLife"]) { return request<{ studentLife: SiteContent["studentLife"] }>(`/student-life`, jsonInit({ studentLife }, "PUT")); },
-  async getProfil(): Promise<SiteContent["profil"] | null> { const d = await request<{ profil: SiteContent["profil"] | null }>(`/profil`); return d.profil; },
-  async saveProfil(profil: SiteContent["profil"]) { return request<{ profil: SiteContent["profil"] }>(`/profil`, jsonInit({ profil }, "PUT")); },
-  async getAkademik(): Promise<SiteContent["akademik"] | null> { const d = await request<{ akademik: SiteContent["akademik"] | null }>(`/akademik`); return d.akademik; },
-  async saveAkademik(akademik: SiteContent["akademik"]) { return request<{ akademik: SiteContent["akademik"] }>(`/akademik`, jsonInit({ akademik }, "PUT")); },
-  async getPenelitian(): Promise<SiteContent["penelitian"] | null> { const d = await request<{ penelitian: SiteContent["penelitian"] | null }>(`/penelitian`); return d.penelitian; },
-  async savePenelitian(penelitian: SiteContent["penelitian"]) { return request<{ penelitian: SiteContent["penelitian"] }>(`/penelitian`, jsonInit({ penelitian }, "PUT")); },
-  async getPengabdian(): Promise<SiteContent["pengabdian"] | null> { const d = await request<{ pengabdian: SiteContent["pengabdian"] | null }>(`/pengabdian`); return d.pengabdian; },
-  async savePengabdian(pengabdian: SiteContent["pengabdian"]) { return request<{ pengabdian: SiteContent["pengabdian"] }>(`/pengabdian`, jsonInit({ pengabdian }, "PUT")); },
-  async getKemahasiswaan(): Promise<SiteContent["kemahasiswaan"] | null> { const d = await request<{ kemahasiswaan: SiteContent["kemahasiswaan"] | null }>(`/kemahasiswaan`); return d.kemahasiswaan; },
-  async saveKemahasiswaan(kemahasiswaan: SiteContent["kemahasiswaan"]) { return request<{ kemahasiswaan: SiteContent["kemahasiswaan"] }>(`/kemahasiswaan`, jsonInit({ kemahasiswaan }, "PUT")); },
-  async getNews(): Promise<SiteContent["news"] | null> { const d = await request<{ news: SiteContent["news"] | null }>(`/news`); return d.news; },
-  async saveNews(news: SiteContent["news"]) { return request<{ news: SiteContent["news"] }>(`/news`, jsonInit({ news }, "PUT")); },
-  async getCta(): Promise<SiteContent["cta"] | null> { const d = await request<{ cta: SiteContent["cta"] | null }>(`/cta`); return d.cta; },
-  async saveCta(cta: SiteContent["cta"]) { return request<{ cta: SiteContent["cta"] }>(`/cta`, jsonInit({ cta }, "PUT")); },
-  async getFooter(): Promise<SiteContent["footer"] | null> { const d = await request<{ footer: SiteContent["footer"] | null }>(`/footer`); return d.footer; },
-  async saveFooter(footer: SiteContent["footer"]) { return request<{ footer: SiteContent["footer"] }>(`/footer`, jsonInit({ footer }, "PUT")); },
-  async getPmbLink(): Promise<SiteContent["pmbLink"] | null> { const d = await request<{ pmbLink: SiteContent["pmbLink"] | null }>(`/pmb-link`); return d.pmbLink; },
-  async savePmbLink(pmbLink: SiteContent["pmbLink"]) { return request<{ pmbLink: SiteContent["pmbLink"] }>(`/pmb-link`, jsonInit({ pmbLink }, "PUT")); },
+  async getNav(): Promise<NavItemInput[]> {
+    const d = await request<{ items: NavItemInput[] }>(`/nav`);
+    return d.items;
+  },
+
+  async getSettings(): Promise<SiteSettings | null> {
+    const d = await request<{ settings: SiteSettings | null }>(`/settings`);
+    return d.settings;
+  },
 
   /* ---------------------------------------------------------- posts */
 
@@ -231,31 +202,6 @@ export const api = {
     return request<{ subscribers: Subscriber[]; pagination: PaginationMeta }>(`/subscribers${pageQuery(params)}`);
   },
 
-  /* -------------------------------------------------- stats + gallery */
-
-  async getStats(): Promise<Stat[]> {
-    const d = await request<{ stats: Stat[] }>(`/stats`);
-    return d.stats;
-  },
-
-  async saveStats(stats: Stat[]): Promise<Stat[]> {
-    const d = await request<{ stats: Stat[] }>(`/stats`, jsonInit({ stats }, "PUT"));
-    return d.stats;
-  },
-
-  async listGallery(params?: PageParams): Promise<{ gallery: GalleryItem[]; pagination: PaginationMeta }> {
-    return request<{ gallery: GalleryItem[]; pagination: PaginationMeta }>(`/gallery${pageQuery(params)}`);
-  },
-
-  async addGallery(input: { image: string; caption?: string; link?: string | null; kind?: "image" | "video"; title?: string; category?: string; thumb?: string | null }): Promise<GalleryItem> {
-    const d = await request<{ item: GalleryItem }>(`/gallery`, jsonInit(input));
-    return d.item;
-  },
-
-  async removeGallery(id: string): Promise<void> {
-    await request(`/gallery/${encodeURIComponent(id)}`, { method: "DELETE" });
-  },
-
   /* -------------------------------------------------- audit + media */
 
   async listAudit(params?: PageParams): Promise<{ audit: AuditEntry[]; pagination: PaginationMeta }> {
@@ -309,4 +255,4 @@ export const api = {
   },
 };
 
-export type { AdminUser, AuditEntry, GalleryItem, Post, Registration, SiteContent, Stat, Subscriber, MediaAsset, DashboardSummary };
+export type { AdminUser, AuditEntry, Post, Registration, SiteSettings, Subscriber, MediaAsset, DashboardSummary, PublicPage, PageSummary, NavItemInput };
