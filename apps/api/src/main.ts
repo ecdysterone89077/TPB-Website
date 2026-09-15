@@ -10,7 +10,9 @@ import { AppModule } from "./app.module";
 import { config } from "./config";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  app.use(express.json({ limit: "2mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "2mb" }));
   app.use(helmet());
   app.use(cookieParser());
   (app.getHttpAdapter().getInstance() as any).set("trust proxy", config.trustProxy);

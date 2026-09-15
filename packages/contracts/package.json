@@ -2,6 +2,8 @@
   "name": "@tpb/contracts",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "sideEffects": false,
   "description": "Shared request/response types & DTO schemas for TPB web + api",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -1,0 +1,24 @@
+{
+  "name": "@tpb/content-migration",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Migrasi konten legacy (site_modules/site_stats/gallery_items) ke model halaman + blok",
+  "scripts": {
+    "migrate": "tsx src/migrate.ts",
+    "write": "tsx src/migrate.ts --write",
+    "reconcile": "tsx src/migrate.ts --reconcile",
+    "test": "tsx --test src/mapping.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "@tpb/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "prisma": "^6.2.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

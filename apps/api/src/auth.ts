@@ -33,7 +33,7 @@ export class JwtAuthGuard implements CanActivate {
 @Injectable()
 export class RolesGuard implements CanActivate {
   canActivate(ctx: ExecutionContext) {
-    const required = Reflect.getMetadata("roles", ctx.getHandler()) as Role[] | undefined;
+    const required = (Reflect.getMetadata("roles", ctx.getHandler()) ?? (typeof ctx.getClass === "function" ? Reflect.getMetadata("roles", ctx.getClass()) : undefined)) as Role[] | undefined;
     if (!required?.length) return true;
     const user = ctx.switchToHttp().getRequest<any>().user as RequestUser | undefined;
     if (!user || !required.includes(user.role)) throw new ForbiddenException("Role tidak memiliki akses.");
@@ -43,6 +43,7 @@ export class RolesGuard implements CanActivate {
 
 export const Roles = (...roles: Role[]) => (target: object, key?: string | symbol, descriptor?: PropertyDescriptor) => {
   if (descriptor) Reflect.defineMetadata("roles", roles, descriptor.value);
+  else Reflect.defineMetadata("roles", roles, target);
 };
 export const safeUser = (u: any): RequestUser => ({ id: u.id, email: u.email, role: u.role, name: u.name });
 export const verifyPassword = (hash: string, password: string) => verify(hash, password);

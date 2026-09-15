@@ -28,6 +28,11 @@ enum PmbStatus {
   ditolak
 }
 
+enum PageStatus {
+  draft
+  published
+}
+
 // ---------------------------------------------------------------- users/auth
 
 model User {
@@ -199,4 +204,85 @@ model AuditLog {
 
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------- page builder
+
+// Halaman situs: satu baris per halaman; blok disimpan terpisah di `blocks`.
+model Page {
+  id             String     @id @default(uuid())
+  slug           String     @unique @db.VarChar(160)
+  title          String     @db.VarChar(220)
+  status         PageStatus @default(draft)
+  seoTitle       String?    @db.VarChar(220)
+  seoDescription String?    @db.VarChar(500)
+  ogImage        String?    @db.VarChar(2000)
+  publishedAt    DateTime?
+  publishedData  Json?
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  blocks         Block[]
+  revisions      PageRevision[]
+
+  @@index([status, updatedAt])
+  @@map("pages")
+}
+
+// Blok konten per halaman; `data` divalidasi Zod per `type` di kontrak.
+model Block {
+  id        String   @id @default(uuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  type      String   @db.VarChar(40)
+  position  Int
+  data      Json
+  isVisible Boolean  @default(true)
+  anchor    String?  @db.VarChar(120)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pageId, position])
+  @@map("blocks")
+}
+
+// Snapshot halaman + blok saat terbit (undo/riwayat).
+model PageRevision {
+  id        String   @id @default(uuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  data      Json
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([pageId, createdAt])
+  @@map("page_revisions")
+}
+
+// Menu navigasi global (multi-level via parentId).
+model NavItem {
+  id           String    @id @default(uuid())
+  parentId     String?
+  parent       NavItem?  @relation("NavChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children     NavItem[] @relation("NavChildren")
+  label        String    @db.VarChar(160)
+  href         String    @db.VarChar(2000)
+  openInNewTab Boolean   @default(false)
+  position     Int
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([parentId, position])
+  @@map("nav_items")
+}
+
+// Pengaturan global situs (brand, footer, link PMB) — key unik.
+model SiteSetting {
+  key       String   @id @db.VarChar(64)
+  data      Json
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
 }
