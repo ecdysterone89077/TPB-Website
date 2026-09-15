@@ -184,21 +184,21 @@ export function BlockRenderer({ block, onDaftar }: { block: Block; onDaftar: Daf
     case "image": return <ImageView block={block} />;
     case "video": return <VideoView block={block} />;
     case "button": return <ButtonView block={block} />;
-    case "divider": return <div className="mx-auto max-w-[1100px] px-5 lg:px-10"><hr className="border-midnight/10" /></div>;
-    case "spacer": return <div className={block.data.size === "sm" ? "h-6" : block.data.size === "lg" ? "h-24" : "h-12"} aria-hidden />;
+    case "divider": return <div id={block.anchor} className="mx-auto max-w-[1100px] scroll-mt-24 px-5 lg:px-10"><hr className="border-midnight/10" /></div>;
+    case "spacer": return <div id={block.anchor} className={`scroll-mt-24 ${block.data.size === "sm" ? "h-6" : block.data.size === "lg" ? "h-24" : "h-12"}`} aria-hidden />;
     case "accordion": return <AccordionView block={block} />;
     case "table": return <TableView block={block} />;
     case "embed": return <EmbedView block={block} />;
     case "gallery": return <GalleryView block={block} />;
     case "html": return <section id={block.anchor} className="scroll-mt-24 bg-cream py-10"><div className="rich-text mx-auto max-w-[900px] px-5 lg:px-10" dangerouslySetInnerHTML={{ __html: block.data.code }} /></section>;
-    case "hero": return <Hero hero={block.data} onDaftar={onDaftar} />;
-    case "marquee": return <Marquee items={block.data} />;
-    case "stats": return <Stats items={block.data} />;
-    case "about": return <About about={block.data} />;
-    case "programs": return <Programs programs={block.data} onDaftar={onDaftar} />;
-    case "research": return <Research research={block.data} />;
-    case "community": return <Community community={block.data} />;
-    case "studentLife": return <StudentLife studentLife={block.data} onDaftar={onDaftar} />;
+    case "hero": return <Hero hero={block.data} onDaftar={onDaftar} anchor={block.anchor} />;
+    case "marquee": return <Marquee items={block.data} anchor={block.anchor} />;
+    case "stats": return <Stats items={block.data} anchor={block.anchor} />;
+    case "about": return <About about={block.data} anchor={block.anchor} />;
+    case "programs": return <Programs programs={block.data} onDaftar={onDaftar} anchor={block.anchor} />;
+    case "research": return <Research research={block.data} anchor={block.anchor} />;
+    case "community": return <Community community={block.data} anchor={block.anchor} />;
+    case "studentLife": return <StudentLife studentLife={block.data} onDaftar={onDaftar} anchor={block.anchor} />;
     case "timeline": return <TimelineSection data={block.data} anchor={block.anchor} />;
     case "visiMisi": return <VisiMisiSection data={block.data} anchor={block.anchor} />;
     case "struktur": return <StrukturSection data={block.data} anchor={block.anchor} />;
@@ -218,7 +218,7 @@ export function BlockRenderer({ block, onDaftar }: { block: Block; onDaftar: Daf
     case "prestasi": return <PrestasiSection data={block.data} anchor={block.anchor} />;
     case "alumni": return <AlumniSection data={block.data} anchor={block.anchor} />;
     case "news": return <News news={block.data} anchor={block.anchor} />;
-    case "cta": return <CTA cta={block.data} onDaftar={onDaftar} />;
+    case "cta": return <CTA cta={block.data} onDaftar={onDaftar} anchor={block.anchor} />;
     default: return null;
   }
 }
