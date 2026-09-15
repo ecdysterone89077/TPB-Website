@@ -251,10 +251,12 @@ Pastikan direktori `MEDIA_DIR`:
 ## Alur Admin
 
 1. Buka `/#admin` — selama tabel `users` (MySQL) kosong, form **Bootstrap Admin** muncul (sekali pakai).
-2. Login → dashboard: **Dashboard, Konten Halaman, Berita, PMB, Media, Pelanggan, Pengguna, Audit Log**. Menu Berita/PMB/Pelanggan/Media/Pengguna/Audit berfungsi penuh; menu **Konten Halaman** menampilkan informasi bahwa editor visual blok hadir pada fase berikutnya.
-3. **Struktur konten baru = halaman + blok** (lihat bagian Page Builder). Situs publik dirender sepenuhnya dari blok halaman terbit; tidak ada fallback/default content di kode (kebijakan: *tidak boleh ada data static inline / fallback / hardcode menempel di file code*).
-4. **Media** — unggah JPEG/PNG/GIF/WebP/PDF lalu salin URL-nya untuk dipakai pada blok gambar/video/galeri. Blok **galeri** menampilkan grid + popup lightbox (video YouTube/Instagram diputar di tempat); blok **video** mendukung mode popup.
-5. **Pencarian** — tombol Cari di menu mencari keyword pada blok halaman yang sedang dibuka dan berita.
+2. Login → dashboard: **Dashboard, Konten Halaman, Pengaturan Situs, Berita, PMB, Media, Pelanggan, Pengguna, Audit Log**.
+3. **Konten Halaman (builder)** — pilih halaman → **+ Tambah bagian** (palet 40 template berlabel Indonesia) → isi kolom → atur urutan (tarik/geser atau tombol ↑↓) → **Simpan draf** → **Terbitkan**. Tersedia: duplikat, sembunyikan bagian, pratinjau, dan **Riwayat versi** (pulihkan versi lama). Editor teks mendukung tebal/miring/daftar/tautan (TipTap), kolom gambar memakai pemilih dari pustaka Media, kolom video menerima tautan YouTube/Instagram.
+4. **Pengaturan Situs** — identitas/brand, logo, link PMB, footer & kontak, serta **editor menu navigasi** (multi-level, buka di tab baru).
+5. **Struktur konten = halaman + blok** (lihat bagian Page Builder). Situs publik dirender sepenuhnya dari blok halaman terbit; tidak ada fallback/default content di kode (kebijakan: *tidak boleh ada data static inline / fallback / hardcode menempel di file code*).
+6. **Media** — unggah JPEG/PNG/GIF/WebP/PDF lalu salin URL-nya; blok galeri menampilkan grid + popup lightbox (video YouTube/Instagram diputar di tempat), blok video mendukung mode popup.
+7. **Pencarian** — tombol Cari di menu mencari keyword pada blok halaman yang sedang dibuka dan berita.
 
 ---
 
