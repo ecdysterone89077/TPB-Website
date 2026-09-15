@@ -21,9 +21,14 @@ const blockRow = (over: Record<string, unknown> = {}) => ({
   id: "b1", pageId: "p1", type: "heading", position: 0, data: { text: "Halo", level: 2, align: "left" }, isVisible: true, anchor: null, ...over,
 });
 
+const publishedSnapshot = () => ({
+  page: { title: "Beranda", slug: "beranda", seoTitle: "", seoDescription: "", ogImage: null },
+  blocks: [{ type: "heading", data: { text: "Halo", level: 2, align: "left" }, isVisible: true }],
+});
+
 const pageRow = (over: Record<string, unknown> = {}) => ({
   id: "p1", slug: "beranda", title: "Beranda", status: "published", seoTitle: null, seoDescription: null, ogImage: null,
-  publishedAt: new Date("2026-01-01T00:00:00Z"), publishedData: null, createdBy: null, updatedBy: null,
+  publishedAt: new Date("2026-01-01T00:00:00Z"), publishedData: publishedSnapshot(), createdBy: null, updatedBy: null,
   createdAt: new Date("2026-01-01T00:00:00Z"), updatedAt: new Date("2026-01-02T00:00:00Z"), blocks: [blockRow()], ...over,
 });
 
@@ -112,21 +117,52 @@ describe("ContentBundleController — export", () => {
     await expect(controller.export()).rejects.toThrow(BadRequestException);
   });
 
-  it("halaman terbit tanpa blok draf memakai blok snapshot terbit", async () => {
+  it("halaman terbit memakai blok snapshot terbit, bukan draf yang belum tayang", async () => {
     const prisma = makePrisma();
     const published = PageRevisionDataSchema.parse({
       page: { title: "Beranda", slug: "beranda", seoTitle: "", seoDescription: "", ogImage: null },
       blocks: [heading("Dari Snapshot")],
     });
-    prisma.page.findMany.mockResolvedValue([pageRow({ blocks: [], publishedData: published })]);
+    prisma.page.findMany.mockResolvedValue([pageRow({ publishedData: published, blocks: [blockRow({ data: { text: "Draf Belum Terbit", level: 2, align: "left" } })] })]);
     const controller = new ContentBundleController(prisma as any);
     const { bundle: out } = await controller.export();
     expect(out.pages[0].blocks).toEqual([{ type: "heading", data: { text: "Dari Snapshot", level: 2, align: "left" }, isVisible: true }]);
   });
 
-  it("menyertakan anchor dan blok tersembunyi apa adanya untuk draf", async () => {
+  it("halaman terbit memakai judul/SEO snapshot, bukan draf yang belum tayang", async () => {
     const prisma = makePrisma();
-    prisma.page.findMany.mockResolvedValue([pageRow({ blocks: [blockRow({ anchor: "dosen" }), blockRow({ id: "b2", position: 1, isVisible: false })] })]);
+    const published = PageRevisionDataSchema.parse({
+      page: { title: "Judul Tayang", slug: "beranda", seoTitle: "SEO Tayang", seoDescription: "Desc Tayang", ogImage: null },
+      blocks: [heading("Halo")],
+    });
+    prisma.page.findMany.mockResolvedValue([pageRow({ title: "Judul Draf", seoTitle: "SEO Draf", seoDescription: "Desc Draf", publishedData: published })]);
+    const controller = new ContentBundleController(prisma as any);
+    const { bundle: out } = await controller.export();
+    expect(out.pages[0]).toMatchObject({ title: "Judul Tayang", seoTitle: "SEO Tayang", seoDescription: "Desc Tayang" });
+  });
+
+  it("mengekspor blok docLink dan anchor-nya dari snapshot terbit", async () => {
+    const prisma = makePrisma();
+    const published = PageRevisionDataSchema.parse({
+      page: { title: "Beranda", slug: "beranda", seoTitle: "", seoDescription: "", ogImage: null },
+      blocks: [{ type: "docLink", anchor: "kurikulum", data: { kicker: "Akademik", title: "Kurikulum", links: [{ label: "Panduan", href: "https://drive.google.com/x" }] }, isVisible: true }],
+    });
+    prisma.page.findMany.mockResolvedValue([pageRow({ publishedData: published })]);
+    const controller = new ContentBundleController(prisma as any);
+    const { bundle: out } = await controller.export();
+    expect(out.pages[0].blocks[0]).toMatchObject({ type: "docLink", anchor: "kurikulum" });
+  });
+
+  it("menolak ekspor halaman terbit tanpa snapshot valid", async () => {
+    const prisma = makePrisma();
+    prisma.page.findMany.mockResolvedValue([pageRow({ publishedData: null })]);
+    const controller = new ContentBundleController(prisma as any);
+    await expect(controller.export()).rejects.toThrow(BadRequestException);
+  });
+
+  it("menyertakan anchor dan blok tersembunyi apa adanya untuk halaman draf", async () => {
+    const prisma = makePrisma();
+    prisma.page.findMany.mockResolvedValue([pageRow({ status: "draft", blocks: [blockRow({ anchor: "dosen" }), blockRow({ id: "b2", position: 1, isVisible: false })] })]);
     const controller = new ContentBundleController(prisma as any);
     const { bundle: out } = await controller.export();
     expect(out.pages[0].blocks[0]).toMatchObject({ anchor: "dosen" });
@@ -135,7 +171,7 @@ describe("ContentBundleController — export", () => {
 
   it("menolak ekspor jika ada blok lama yang tidak valid (tanpa fallback)", async () => {
     const prisma = makePrisma();
-    prisma.page.findMany.mockResolvedValue([pageRow({ blocks: [blockRow({ type: "heading", data: { text: 123 } })] })]);
+    prisma.page.findMany.mockResolvedValue([pageRow({ status: "draft", blocks: [blockRow({ type: "heading", data: { text: 123 } })] })]);
     const controller = new ContentBundleController(prisma as any);
     await expect(controller.export()).rejects.toThrow();
   });
@@ -229,7 +265,7 @@ describe("ContentBundleController — import", () => {
 
   it("halaman terbit mengisi snapshot publishedData dan publishedAt", async () => {
     const prisma = makePrisma();
-    prisma.tx.page.findUnique.mockResolvedValue(pageRow({ publishedAt: null }));
+    prisma.tx.page.findUnique.mockResolvedValue(pageRow({ publishedAt: null, publishedData: null }));
     const controller = new ContentBundleController(prisma as any);
 
     await controller.import(bundle({ pages: [{ title: "Beranda", slug: "beranda", status: "published", blocks: [heading("Halo")] }] }), { user: admin } as any);

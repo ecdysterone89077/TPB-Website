@@ -8,6 +8,7 @@ export type FieldSpec = {
   kind: FieldKind;
   hint?: string;
   placeholder?: string;
+  maxLength?: number;
   options?: { value: string; label: string }[];
   itemLabel?: string;
   itemFields?: FieldSpec[];
@@ -100,6 +101,15 @@ export const BLOCK_SPECS: Record<BlockType, BlockSpec> = {
     label: "HTML kustom (lanjutan)", icon: "⚙️", group: "Lanjutan", description: "Hanya untuk yang paham HTML. Isi otomatis dibersihkan dari skrip berbahaya.",
     fields: [{ key: "code", label: "Kode HTML", kind: "html", hint: "Contoh: <p>Halo</p>" }],
     defaults: () => ({ code: "<p>Tulis di sini…</p>" }),
+  },
+  docLink: {
+    label: "Tautan dokumen", icon: "📑", group: "Teks & Media", description: "Daftar tautan dokumen (mis. panduan kurikulum) dengan keterangan.",
+    fields: [
+      ...kickerTitle,
+      area("note", "Catatan pengantar (opsional)"),
+      listObj("links", "Daftar tautan", [t("label", "Tulisan tautan"), link("href", "Tautan dokumen"), t("note", "Keterangan (opsional)")], { itemLabel: "Tautan", defaultItem: () => ({ label: "Tautan baru", href: "#top", note: "" }) }),
+    ],
+    defaults: () => ({ kicker: "", title: "Tautan Dokumen", note: "", links: [{ label: "Dokumen 1", href: "#top", note: "" }] }),
   },
 
   hero: {

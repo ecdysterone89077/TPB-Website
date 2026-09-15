@@ -6,6 +6,7 @@ import { JwtAuthGuard, Roles, RolesGuard, type RequestUser } from "../auth";
 import { parse } from "../zod";
 import { parsePagination, paginationMeta } from "../pagination";
 import { sanitizeBlock } from "../sanitize";
+import { samePublishedSnapshot } from "../json.util";
 import { toAdminPage, toBlock, toPageSummary } from "../pages.util";
 
 type AuthRequest = Request & { user?: RequestUser };
@@ -129,11 +130,12 @@ export class AdminPagesController {
         page: { title: page.title, slug: page.slug, seoTitle: page.seoTitle ?? "", seoDescription: page.seoDescription ?? "", ogImage: page.ogImage ?? null },
         blocks: page.blocks.map(toBlock).map(sanitizeBlock),
       });
+      const unchanged = page.status === "published" && samePublishedSnapshot(page.publishedData, snapshot);
       const updated = await tx.page.update({
         where: { id },
-        data: { status: "published", publishedAt: new Date(), publishedData: snapshot as any, updatedBy: req.user?.id ?? null },
+        data: { status: "published", ...(unchanged ? {} : { publishedAt: new Date(), publishedData: snapshot as any }), updatedBy: req.user?.id ?? null },
       });
-      await tx.pageRevision.create({ data: { pageId: id, data: snapshot as any, createdBy: req.user?.id ?? null } });
+      if (!unchanged) await tx.pageRevision.create({ data: { pageId: id, data: snapshot as any, createdBy: req.user?.id ?? null } });
       return updated;
     });
     return { page: toPageSummary({ ...result, blocks: [] }) };

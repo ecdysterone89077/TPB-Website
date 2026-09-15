@@ -11,6 +11,9 @@ const { api } = vi.hoisted(() => ({
     exportContent: vi.fn(),
     importContent: vi.fn(),
     listMedia: vi.fn(),
+    publishPage: vi.fn(),
+    updatePage: vi.fn(),
+    savePageBlocks: vi.fn(),
   },
 }));
 
@@ -23,7 +26,7 @@ const editor: AdminUser = { ...admin, role: "EDITOR" };
 const pageData = {
   id: "p1", slug: "beranda", title: "Beranda", status: "published" as const,
   seoTitle: null, seoDescription: null, ogImage: null, publishedAt: null, updatedAt: "2026-09-15T00:00:00.000Z",
-  blocks: [{ id: "b1", type: "heading", data: { text: "Halo", level: 2, align: "left" }, isVisible: true }],
+  blocks: [{ id: "11111111-1111-4111-8111-111111111111", type: "heading", data: { text: "Halo", level: 2, align: "left" }, isVisible: true }],
 };
 
 const bundle: SiteBundle = {
@@ -172,6 +175,31 @@ describe("PageBuilder — bundel konten", () => {
 
     expect(await screen.findByText(/Bundel tidak valid/i)).toBeTruthy();
     expect(api.importContent).not.toHaveBeenCalled();
+  });
+
+  it("halaman terbit tetap bisa menerbitkan perubahan draf", async () => {
+    api.publishPage.mockResolvedValue({ id: "p1", slug: "beranda", title: "Beranda", status: "published", publishedAt: null, updatedAt: "" });
+    render(<PageBuilder user={admin} />);
+
+    const button = await screen.findByRole("button", { name: "Terbitkan perubahan" });
+    fireEvent.click(button);
+
+    await waitFor(() => expect(api.publishPage).toHaveBeenCalledWith("p1"));
+    expect(api.savePageBlocks).not.toHaveBeenCalled();
+  });
+
+  it("perubahan yang belum disimpan otomatis disimpan sebelum menerbitkan", async () => {
+    api.updatePage.mockResolvedValue({ ...pageData, title: "Beranda Baru" });
+    api.savePageBlocks.mockResolvedValue(pageData.blocks);
+    api.publishPage.mockResolvedValue({ id: "p1", slug: "beranda", title: "Beranda Baru", status: "published", publishedAt: null, updatedAt: "" });
+    render(<PageBuilder user={admin} />);
+
+    const title = await screen.findByDisplayValue("Beranda");
+    fireEvent.change(title, { target: { value: "Beranda Baru" } });
+    fireEvent.click(screen.getByRole("button", { name: "Terbitkan perubahan" }));
+
+    await waitFor(() => expect(api.savePageBlocks).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.publishPage).toHaveBeenCalledWith("p1"));
   });
 
   it("EDITOR tidak melihat tombol ekspor/impor", async () => {

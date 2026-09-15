@@ -127,6 +127,22 @@ export const GalleryBlockSchema = z.object({
 
 export const HtmlBlockSchema = z.object({ code: z.string().max(20000) });
 
+export const DocLinkBlockSchema = z.object({
+  kicker: z.string().max(300).default(""),
+  title: z.string().max(500).default(""),
+  note: z.string().max(2000).default(""),
+  links: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1).max(300),
+        href: SafeHrefSchema,
+        note: z.string().max(500).default(""),
+      }),
+    )
+    .min(1)
+    .max(50),
+});
+
 /* ------------------------------------------- blok preset (gaya situs lama) */
 
 export const HeroBlockSchema = S.hero;
@@ -173,6 +189,7 @@ export const BlockTypeSchema = z.enum([
   "embed",
   "gallery",
   "html",
+  "docLink",
   "hero",
   "marquee",
   "stats",
@@ -233,6 +250,7 @@ export const BlockSchema = z.discriminatedUnion("type", [
   variant("embed", EmbedBlockSchema),
   variant("gallery", GalleryBlockSchema),
   variant("html", HtmlBlockSchema),
+  variant("docLink", DocLinkBlockSchema),
   variant("hero", HeroBlockSchema),
   variant("marquee", MarqueeBlockSchema),
   variant("stats", StatsBlockSchema),

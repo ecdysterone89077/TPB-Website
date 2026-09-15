@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { api } from "../lib/api";
+import { useSystemTexts } from "../lib/systemTexts";
 
 // Program studi diisi dari pilihan pengguna; daftar program tidak di-hardcode di sini —
 // mengambil dari konten situs (content.programs.cards) oleh pemanggil.
 
 export function Pmb({ onClose, programs }: { onClose: () => void; programs: string[] }) {
+  const texts = useSystemTexts();
   const [form, setForm] = useState({ name: "", email: "", phone: "", school: "", program: "", message: "" });
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [error, setError] = useState("");
@@ -41,29 +43,29 @@ export function Pmb({ onClose, programs }: { onClose: () => void; programs: stri
       <div className="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         {state === "done" ? (
           <div className="text-center py-8">
-            <p className="text-lg font-semibold text-slate-900 mb-2">Pendaftaran terkirim</p>
-            <p className="text-slate-500 text-sm mb-6">Tim PMB akan menghubungi Anda.</p>
-            <button onClick={onClose} className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm">Tutup</button>
+            <p className="text-lg font-semibold text-slate-900 mb-2">{texts.pmb.doneTitle}</p>
+            <p className="text-slate-500 text-sm mb-6">{texts.pmb.doneBody}</p>
+            <button onClick={onClose} className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm">{texts.pmb.closeLabel}</button>
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-4">
-            <h2 className="text-xl font-bold">Pendaftaran PMB</h2>
-            <input required className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Nama lengkap" value={form.name} onChange={set("name")} />
-            <input required type="email" className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Email" value={form.email} onChange={set("email")} />
-            <input required className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Nomor WhatsApp / telepon" value={form.phone} onChange={set("phone")} />
-            <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Asal sekolah" value={form.school} onChange={set("school")} />
+            <h2 className="text-xl font-bold">{texts.pmb.title}</h2>
+            <input required className="w-full border rounded-lg px-3 py-2 text-sm" placeholder={texts.pmb.namePlaceholder} value={form.name} onChange={set("name")} />
+            <input required type="email" className="w-full border rounded-lg px-3 py-2 text-sm" placeholder={texts.pmb.emailPlaceholder} value={form.email} onChange={set("email")} />
+            <input required className="w-full border rounded-lg px-3 py-2 text-sm" placeholder={texts.pmb.phonePlaceholder} value={form.phone} onChange={set("phone")} />
+            <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder={texts.pmb.schoolPlaceholder} value={form.school} onChange={set("school")} />
             {programs.length > 0 && (
               <select className="w-full border rounded-lg px-3 py-2 text-sm" value={form.program} onChange={set("program")}>
-                <option value="">Pilih program</option>
+                <option value="">{texts.pmb.programPlaceholder}</option>
                 {programs.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             )}
-            <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={3} placeholder="Pesan" value={form.message} onChange={set("message")} />
+            <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={3} placeholder={texts.pmb.messagePlaceholder} value={form.message} onChange={set("message")} />
             {state === "error" && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-2 justify-end">
-              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border text-sm">Batal</button>
+              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border text-sm">{texts.pmb.cancelLabel}</button>
               <button type="submit" disabled={state === "sending"} className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm disabled:opacity-50">
-                {state === "sending" ? "Mengirim…" : "Kirim"}
+                {state === "sending" ? texts.pmb.sendingLabel : texts.pmb.submitLabel}
               </button>
             </div>
           </form>

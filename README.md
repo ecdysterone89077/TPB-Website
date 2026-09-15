@@ -252,8 +252,8 @@ Pastikan direktori `MEDIA_DIR`:
 
 1. Buka `/#admin` — selama tabel `users` (MySQL) kosong, form **Bootstrap Admin** muncul (sekali pakai).
 2. Login → dashboard: **Dashboard, Konten Halaman, Pengaturan Situs, Berita, PMB, Media, Pelanggan, Pengguna, Audit Log**.
-3. **Konten Halaman (builder)** — pilih halaman → **+ Tambah bagian** (palet 40 template berlabel Indonesia) → isi kolom → atur urutan (tarik/geser atau tombol ↑↓) → **Simpan draf** → **Terbitkan**. Tersedia: duplikat, sembunyikan bagian, pratinjau, dan **Riwayat versi** (pulihkan versi lama). Editor teks mendukung tebal/miring/daftar/tautan (TipTap), kolom gambar memakai pemilih dari pustaka Media, kolom video menerima tautan YouTube/Instagram.
-4. **Pengaturan Situs** — identitas/brand, logo, link PMB, footer & kontak, serta **editor menu navigasi** (multi-level, buka di tab baru).
+3. **Konten Halaman (builder)** — pilih halaman → **+ Tambah bagian** (palet 41 template berlabel Indonesia) → isi kolom → atur urutan (tarik/geser atau tombol ↑↓) → **Simpan draf** → **Terbitkan**. Tersedia: duplikat, sembunyikan bagian, pratinjau, dan **Riwayat versi** (pulihkan versi lama). Editor teks mendukung tebal/miring/daftar/tautan (TipTap), kolom gambar memakai pemilih dari pustaka Media, kolom video menerima tautan YouTube/Instagram.
+4. **Pengaturan Situs** — identitas/brand, logo, link PMB, footer & kontak, **Teks Sistem** (layar memuat, 404, error, tab berita, placeholder pencarian, akhiran judul situs, label & placeholder modal PMB — kosongkan untuk memakai bawaan), serta **editor menu navigasi** (multi-level, buka di tab baru).
 5. **Struktur konten = halaman + blok** (lihat bagian Page Builder). Situs publik dirender sepenuhnya dari blok halaman terbit; tidak ada fallback/default content di kode (kebijakan: *tidak boleh ada data static inline / fallback / hardcode menempel di file code*).
 6. **Media** — unggah JPEG/PNG/GIF/WebP/PDF lalu salin URL-nya; blok galeri menampilkan grid + popup lightbox (video YouTube/Instagram diputar di tempat), blok video mendukung mode popup.
 7. **Pencarian** — tombol Cari di menu mencari keyword pada blok halaman yang sedang dibuka dan berita.
@@ -262,13 +262,13 @@ Pastikan direktori `MEDIA_DIR`:
 
 ## Page Builder (halaman + blok)
 
-Model konten: tabel `pages`, `blocks`, `nav_items`, `site_settings`, `page_revisions`. Kontrak validasi di `packages/contracts` (`BlockSchema`: 12 blok generik — termasuk rich text, gambar, video popup, galeri lightbox, tombol, accordion, tabel, embed, HTML kustom — + 28 preset bergaya situs sebelumnya). Blok `html` (mode lanjutan) disanitasi allowlist di server (`apps/api/src/sanitize.ts`). Tautan divalidasi (menolak `javascript:`/protocol-relative), menu maks 3 tingkat, id blok unik.
+Model konten: tabel `pages`, `blocks`, `nav_items`, `site_settings`, `page_revisions`. Kontrak validasi di `packages/contracts` (`BlockSchema`: 13 blok generik — termasuk rich text, gambar, video popup, galeri lightbox, tombol, accordion, tabel, embed, HTML kustom, tautan dokumen — + 28 preset bergaya situs sebelumnya). Blok `html` (mode lanjutan) disanitasi allowlist di server (`apps/api/src/sanitize.ts`). Tautan divalidasi (menolak `javascript:`/protocol-relative), menu maks 3 tingkat, id blok unik.
 
 | Endpoint | Akses | Keterangan |
 |---|---|---|
 | `GET /v1/pages`, `GET /v1/pages/:slug` | publik | hanya halaman terbit; yang disajikan adalah **snapshot saat terbit** — editan draft baru tayang setelah `publish` |
 | `GET /v1/nav`, `PUT /v1/nav` | publik / ADMIN+EDITOR | menu multi-level (maks 3 tingkat) |
-| `GET /v1/settings`, `PUT /v1/settings` | publik / ADMIN+EDITOR | brand, footer, link PMB |
+| `GET /v1/settings`, `PUT /v1/settings` | publik / ADMIN+EDITOR | brand, footer, link PMB, teks sistem |
 | `GET/POST/PUT/DELETE /v1/admin/pages[/:id]` | ADMIN+EDITOR | CRUD halaman |
 | `PUT /v1/admin/pages/:id/blocks` | ADMIN+EDITOR | simpan blok transaksional (id blok dipertahankan; id duplikat ditolak) |
 | `POST /v1/admin/pages/:id/publish` / `unpublish` | ADMIN+EDITOR | terbit (minimal 1 blok) + snapshot revisi |

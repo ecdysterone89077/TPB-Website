@@ -10,10 +10,10 @@ type SiteState = {
   reload: () => void;
 };
 
-const Ctx = createContext<SiteState>({ status: "loading", settings: null, nav: [], reload: async () => {} });
+export const SiteContext = createContext<SiteState>({ status: "loading", settings: null, nav: [], reload: async () => {} });
 
 export function useSite(): SiteState {
-  return useContext(Ctx);
+  return useContext(SiteContext);
 }
 
 export function SiteProvider({ children }: { children: ReactNode }) {
@@ -37,5 +37,5 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     void load();
   }, []);
 
-  return <Ctx.Provider value={{ ...state, reload: load }}>{children}</Ctx.Provider>;
+  return <SiteContext.Provider value={{ ...state, reload: load }}>{children}</SiteContext.Provider>;
 }

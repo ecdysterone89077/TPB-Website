@@ -254,7 +254,7 @@ export function PageBuilder({ user }: { user: AdminUser }) {
       setBlocks(saved);
       setPage({ ...metaPage, blocks: saved });
       setDirty(false);
-      setNotice("Draf tersimpan. Klik \"Terbitkan\" agar tampil di situs.");
+      setNotice("Draf tersimpan. Klik tombol terbitkan agar tampil di situs.");
       await loadPages();
       return true;
     } catch (e: any) {
@@ -540,9 +540,14 @@ export function PageBuilder({ user }: { user: AdminUser }) {
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setPalette(true)} className="button-primary">+ Tambah bagian</button>
             <button onClick={save} disabled={busy} className="button-secondary disabled:opacity-50">{busy ? "Menyimpan…" : "Simpan draf"}</button>
-            {page.status === "published"
-              ? <button onClick={unpublish} disabled={busy} className="button-secondary disabled:opacity-50">Sembunyikan dari situs</button>
-              : <button onClick={publish} disabled={busy} className="bg-emerald-600 px-4 py-2 rounded-lg text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50">Terbitkan</button>}
+            {page.status === "published" ? (
+              <>
+                <button onClick={publish} disabled={busy} className="bg-emerald-600 px-4 py-2 rounded-lg text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50">Terbitkan perubahan</button>
+                <button onClick={unpublish} disabled={busy} className="button-secondary disabled:opacity-50">Sembunyikan dari situs</button>
+              </>
+            ) : (
+              <button onClick={publish} disabled={busy} className="bg-emerald-600 px-4 py-2 rounded-lg text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50">Terbitkan</button>
+            )}
             <button onClick={() => setPreview(true)} className="button-secondary">Pratinjau</button>
             <button onClick={openRevisions} className="button-secondary">Riwayat versi</button>
           </div>

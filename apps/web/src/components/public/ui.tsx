@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { useSystemTexts } from "../../lib/systemTexts";
 
 /**
  * Shared presentation primitives for the public site.
@@ -48,8 +49,9 @@ export function Crest({ className = "" }: { className?: string }) {
 }
 
 export function CollectionState({ loading, error, empty, children }: { loading: boolean; error?: string; empty: boolean; children: ReactNode }) {
+  const texts = useSystemTexts();
   if (loading) return <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">{[0, 1, 2].map((i) => <div key={i} className="animate-pulse rounded-3xl border border-midnight/8 bg-white"><div className="h-48 rounded-t-3xl bg-midnight/10" /><div className="space-y-3 p-6"><div className="h-3 w-24 rounded bg-midnight/10" /><div className="h-5 w-full rounded bg-midnight/10" /></div></div>)}</div>;
-  if (error) return <p className="mt-10 text-center text-midnight/60">Gagal memuat data. Coba muat ulang halaman.</p>;
-  if (empty) return <p className="mt-10 text-center text-midnight/70">Belum ada data untuk ditampilkan.</p>;
+  if (error) return <p className="mt-10 text-center text-midnight/60">{texts.collectionError}</p>;
+  if (empty) return <p className="mt-10 text-center text-midnight/70">{texts.collectionEmpty}</p>;
   return <>{children}</>;
 }

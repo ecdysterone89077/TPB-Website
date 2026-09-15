@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isSafeHref, type Block, type NavItemInput, type SiteSettings } from "@tpb/contracts";
 import { api } from "../../lib/api";
 import { HOME_SLUG } from "../../lib/router";
+import { resolveSystemTexts, systemTextsOverrides } from "../../lib/systemTexts";
 import { anchorChoices, buildNavHref, emptyNavLink, parseNavHref, type NavLinkMode, type NavLinkValue } from "./navLink";
 import type { FieldSpec } from "./builder/specs";
 import { FieldInput } from "./builder/fields";
@@ -15,7 +16,7 @@ const setIn = (obj: Record<string, unknown>, path: string, value: unknown): Reco
 };
 
 const t = (key: string, label: string, extra: Partial<FieldSpec> = {}): FieldSpec => ({ key, label, kind: "text", ...extra });
-const area = (key: string, label: string): FieldSpec => ({ key, label, kind: "textarea" });
+const area = (key: string, label: string, extra: Partial<FieldSpec> = {}): FieldSpec => ({ key, label, kind: "textarea", ...extra });
 const link = (key: string, label: string): FieldSpec => ({ key, label, kind: "link" });
 const listObj = (key: string, label: string, itemFields: FieldSpec[]): FieldSpec => ({ key, label, kind: "listObject", itemFields, itemLabel: "Tautan", defaultItem: () => ({ label: "Tautan baru", href: "#top" }) });
 
@@ -25,6 +26,34 @@ const FOOTER_FIELDS: FieldSpec[] = [
   t("footer.newsletterTitle", "Judul buletin"), t("footer.submitLabel", "Tulisan tombol kirim"), t("footer.infoTitle", "Judul info kontak"), t("footer.contact.phone", "Telepon"), link("footer.contact.phoneHref", "Tautan telepon (opsional)"), t("footer.contact.email", "Email"), t("footer.contact.address", "Alamat"), area("footer.copyright", "Teks hak cipta"), t("footer.tagline", "Tagline"),
   link("footer.socials.facebook", "Facebook"), link("footer.socials.twitter", "Twitter/X"), link("footer.socials.youtube", "YouTube"), link("footer.socials.linkedin", "LinkedIn"),
   t("footer.quickLinksTitle", "Judul tautan cepat"), listObj("footer.quickLinks", "Tautan cepat", [t("label", "Tulisan"), link("href", "Tautan")]),
+];
+const SYSTEM_TEXT_FIELDS: FieldSpec[] = [
+  t("texts.loading", "Teks layar memuat", { maxLength: 200 }),
+  t("texts.notFoundTitle", "Judul halaman 404", { maxLength: 200 }),
+  area("texts.notFoundBody", "Isi pesan 404", { maxLength: 500 }),
+  t("texts.backLabel", "Tulisan tombol kembali", { maxLength: 80 }),
+  t("texts.errorTitle", "Judul error halaman", { maxLength: 200 }),
+  area("texts.errorBody", "Isi pesan error halaman", { maxLength: 500 }),
+  t("texts.collectionError", "Pesan gagal memuat data", { maxLength: 300 }),
+  t("texts.collectionEmpty", "Pesan saat data kosong", { maxLength: 300 }),
+  t("texts.newsAllTab", "Label tab “Semua” berita", { maxLength: 80 }),
+  t("texts.searchPlaceholder", "Placeholder pencarian", { maxLength: 300 }),
+  t("texts.titleSuffix", "Akhiran judul situs", { maxLength: 160 }),
+];
+const PMB_TEXT_FIELDS: FieldSpec[] = [
+  t("texts.pmb.title", "Judul modal PMB", { maxLength: 160 }),
+  t("texts.pmb.namePlaceholder", "Placeholder nama", { maxLength: 160 }),
+  t("texts.pmb.emailPlaceholder", "Placeholder email", { maxLength: 160 }),
+  t("texts.pmb.phonePlaceholder", "Placeholder telepon/WhatsApp", { maxLength: 160 }),
+  t("texts.pmb.schoolPlaceholder", "Placeholder asal sekolah", { maxLength: 160 }),
+  t("texts.pmb.programPlaceholder", "Placeholder pilihan program", { maxLength: 160 }),
+  t("texts.pmb.messagePlaceholder", "Placeholder pesan", { maxLength: 160 }),
+  t("texts.pmb.submitLabel", "Tulisan tombol kirim", { maxLength: 80 }),
+  t("texts.pmb.sendingLabel", "Tulisan saat mengirim", { maxLength: 80 }),
+  t("texts.pmb.cancelLabel", "Tulisan tombol batal", { maxLength: 80 }),
+  t("texts.pmb.doneTitle", "Judul pendaftaran terkirim", { maxLength: 160 }),
+  t("texts.pmb.doneBody", "Pesan setelah pendaftaran terkirim", { maxLength: 300 }),
+  t("texts.pmb.closeLabel", "Tulisan tombol tutup", { maxLength: 80 }),
 ];
 
 export function NavLinkField({ href, onChange }: { href: string; onChange: (href: string) => void }) {
@@ -184,7 +213,7 @@ export function SettingsEditor() {
     setError("");
     try {
       const [loadedSettings, loadedNav] = await Promise.all([api.getSettings(), api.getNav()]);
-      setSettings(loadedSettings);
+      setSettings(loadedSettings ? { ...loadedSettings, texts: resolveSystemTexts(loadedSettings.texts) } : loadedSettings);
       setNav(loadedNav);
       setDirty(false);
     } catch (e: any) {
@@ -211,9 +240,10 @@ export function SettingsEditor() {
     setError("");
     setNotice("");
     try {
-      const saved = await api.saveSettings(settings);
+      const payload = { ...settings, texts: systemTextsOverrides(resolveSystemTexts(settings.texts)) };
+      const saved = await api.saveSettings(payload);
       const savedNav = await api.saveNav(nav);
-      setSettings(saved);
+      setSettings({ ...saved, texts: resolveSystemTexts(saved.texts) });
       setNav(savedNav);
       setDirty(false);
       setNotice("Pengaturan dan menu tersimpan — langsung berlaku di situs.");
@@ -241,12 +271,15 @@ export function SettingsEditor() {
   const data = settings as unknown as Record<string, unknown>;
   const renderFields = (fields: FieldSpec[], columns = 2) => (
     <div className={`grid gap-3 ${columns === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
-      {fields.map((field) => (
-        <div key={field.key} className={field.kind === "listObject" || field.kind === "textarea" || field.kind === "image" ? "md:col-span-2" : ""}>
-          <label className="mb-1 block text-xs font-semibold text-slate-600">{field.label}</label>
-          <FieldInput spec={field} value={getIn(data, field.key)} onChange={(value) => updateSettings(setIn(structuredClone(data), field.key, value) as unknown as SiteSettings)} />
-        </div>
-      ))}
+      {fields.map((field) => {
+        const fieldId = field.kind === "listObject" ? undefined : `setting-${field.key}`;
+        return (
+          <div key={field.key} className={field.kind === "listObject" || field.kind === "textarea" || field.kind === "image" ? "md:col-span-2" : ""}>
+            <label htmlFor={fieldId} className="mb-1 block text-xs font-semibold text-slate-600">{field.label}</label>
+            <FieldInput id={fieldId} spec={field} value={getIn(data, field.key)} onChange={(value) => updateSettings(setIn(structuredClone(data), field.key, value) as unknown as SiteSettings)} />
+          </div>
+        );
+      })}
     </div>
   );
 
@@ -276,6 +309,14 @@ export function SettingsEditor() {
       <section className="rounded-2xl bg-white p-5 shadow-sm">
         <h2 className="mb-3 font-bold text-slate-900">Footer & Kontak</h2>
         {renderFields(FOOTER_FIELDS, 3)}
+      </section>
+
+      <section className="rounded-2xl bg-white p-5 shadow-sm">
+        <h2 className="mb-1 font-bold text-slate-900">Teks Sistem</h2>
+        <p className="mb-4 text-xs text-slate-500">Nilai bawaan situs sudah terisi sebagai awalan. Ubah yang perlu saja; kosongkan kolom untuk kembali ke teks bawaan. Perubahan langsung berlaku setelah disimpan.</p>
+        {renderFields(SYSTEM_TEXT_FIELDS)}
+        <h3 className="mb-3 mt-6 font-semibold text-slate-800">Modal PMB</h3>
+        {renderFields(PMB_TEXT_FIELDS)}
       </section>
     </div>
   );

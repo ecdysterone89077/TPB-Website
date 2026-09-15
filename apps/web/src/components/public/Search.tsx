@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Block, NavItemInput } from "@tpb/contracts";
 import { api } from "../../lib/api";
 import { HOME_SLUG, navigate } from "../../lib/router";
+import { useSystemTexts } from "../../lib/systemTexts";
 
 type Entry = { group: string; title: string; text: string; href: string };
 
@@ -16,7 +17,10 @@ const flattenStrings = (value: unknown, out: string[] = [], depth = 0): string[]
     return out;
   }
   if (typeof value === "object") {
-    for (const item of Object.values(value as Record<string, unknown>)) flattenStrings(item, out, depth + 1);
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      if (key === "href") continue;
+      flattenStrings(item, out, depth + 1);
+    }
   }
   return out;
 };
@@ -70,13 +74,15 @@ export function SearchButton({ blocks, navigation, slug = HOME_SLUG, compact = f
 }
 
 function SearchDialog({ blocks, navigation, slug, onClose }: { blocks: Block[]; navigation: NavItemInput[]; slug: string; onClose: () => void }) {
+  const texts = useSystemTexts();
   const [query, setQuery] = useState("");
   const [posts, setPosts] = useState<{ title: string; excerpt: string }[]>([]);
+  const [postsFailed, setPostsFailed] = useState(false);
   useEffect(() => {
     let alive = true;
     api.listPublic({ limit: 50 }).then((items) => {
       if (alive) setPosts(items.map((p) => ({ title: p.title, excerpt: p.excerpt || "" })));
-    }).catch(() => {});
+    }).catch(() => { if (alive) setPostsFailed(true); });
     return () => { alive = false; };
   }, []);
   const results = useMemo(() => {
@@ -102,12 +108,13 @@ function SearchDialog({ blocks, navigation, slug, onClose }: { blocks: Block[]; 
         autoFocus
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Cari program, dosen, riset, berita… (min. 2 huruf)"
+        placeholder={texts.searchPlaceholder}
         aria-label="Kata kunci pencarian"
         className="w-full border-b border-midnight/10 px-5 py-4 text-base outline-none"
       />
       <div className="max-h-80 overflow-y-auto">
         {query.trim().length >= 2 && results.length === 0 && <p className="px-5 py-6 text-sm text-midnight/55">Tidak ditemukan untuk “{query.trim()}”.</p>}
+        {postsFailed && <p className="px-5 py-3 text-xs text-midnight/55">{texts.collectionError}</p>}
         {results.map((r, i) => <button key={`${r.href}-${r.title}-${i}`} onClick={() => go(r.href)} className="block w-full border-b border-midnight/5 px-5 py-3 text-left hover:bg-cream">
           <span className="font-mono text-[10px] uppercase tracking-wider text-leaf-600">{r.group}</span>
           <span className="block font-bold text-midnight">{r.title}</span>

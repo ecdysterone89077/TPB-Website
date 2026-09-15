@@ -1,10 +1,12 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Block } from "@tpb/contracts";
-import { NavLinkField } from "./SettingsEditor";
+import type { Block, SiteSettings, SiteSettings as Settings } from "@tpb/contracts";
+import { NavLinkField, SettingsEditor } from "./SettingsEditor";
 
-const { api } = vi.hoisted(() => ({ api: { getAdminPages: vi.fn(), getAdminPage: vi.fn() } }));
+const { api } = vi.hoisted(() => ({
+  api: { getAdminPages: vi.fn(), getAdminPage: vi.fn(), getSettings: vi.fn(), getNav: vi.fn(), saveSettings: vi.fn(), saveNav: vi.fn() },
+}));
 
 vi.mock("../../lib/api", () => ({ api }));
 
@@ -32,8 +34,24 @@ function Harness({ initial }: { initial: string }) {
   );
 }
 
+const settingsFixture = (texts?: Settings["texts"]): Settings => ({
+  brand: { kicker: "", name: "TPB", org: "UNU", logoUrl: "" },
+  pmbLink: "#pmb",
+  footer: {
+    newsletterTitle: "N", infoTitle: "I", quickLinksTitle: "T", galleryTitle: "G", submitLabel: "Kirim",
+    socials: { facebook: "", twitter: "", youtube: "", linkedin: "" },
+    contact: { phone: "", email: "a@b.test", address: "Purwokerto" },
+    quickLinks: [], copyright: "", tagline: "",
+  },
+  ...(texts ? { texts } : {}),
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
+  api.getSettings.mockResolvedValue(settingsFixture());
+  api.getNav.mockResolvedValue([]);
+  api.saveSettings.mockImplementation((value: SiteSettings) => Promise.resolve(value));
+  api.saveNav.mockResolvedValue([]);
   api.getAdminPages.mockResolvedValue({
     pages: [
       { id: "p1", slug: "beranda", title: "Beranda", status: "published" },
@@ -47,6 +65,43 @@ beforeEach(() => {
 });
 
 afterEach(() => cleanup());
+
+describe("SettingsEditor — teks sistem", () => {
+  it("menampilkan nilai bawaan saat pengaturan belum punya texts", async () => {
+    render(<SettingsEditor />);
+
+    const suffix = (await screen.findByLabelText("Akhiran judul situs")) as HTMLInputElement;
+    expect(suffix.value).toBe("TPB UNU Purwokerto");
+    expect((screen.getByLabelText("Teks layar memuat") as HTMLInputElement).value).toBe("Memuat konten…");
+  });
+
+  it("menyimpan hanya teks yang diubah sebagai overrides", async () => {
+    render(<SettingsEditor />);
+
+    const suffix = (await screen.findByLabelText("Akhiran judul situs")) as HTMLInputElement;
+    fireEvent.change(suffix, { target: { value: "UNU Uji" } });
+    fireEvent.click(screen.getByRole("button", { name: "Simpan pengaturan" }));
+
+    await waitFor(() => expect(api.saveSettings).toHaveBeenCalledTimes(1));
+    const payload = api.saveSettings.mock.calls[0][0] as Settings;
+    expect(payload.texts).toEqual({ titleSuffix: "UNU Uji" });
+  });
+
+  it("mengosongkan kolom berarti kembali ke bawaan (tanpa override)", async () => {
+    api.getSettings.mockResolvedValue(settingsFixture({ titleSuffix: "UNU Lama" }));
+    render(<SettingsEditor />);
+
+    const suffix = (await screen.findByLabelText("Akhiran judul situs")) as HTMLInputElement;
+    expect(suffix.value).toBe("UNU Lama");
+    fireEvent.change(suffix, { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "Simpan pengaturan" }));
+
+    await waitFor(() => expect(api.saveSettings).toHaveBeenCalledTimes(1));
+    const payload = api.saveSettings.mock.calls[0][0] as Settings;
+    expect(payload.texts).toBeUndefined();
+    await waitFor(() => expect((screen.getByLabelText("Akhiran judul situs") as HTMLInputElement).value).toBe("TPB UNU Purwokerto"));
+  });
+});
 
 describe("NavLinkField", () => {
   it("memuat halaman dan bagian beserta label spec blok", async () => {

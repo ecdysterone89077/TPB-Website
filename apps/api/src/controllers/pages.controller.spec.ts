@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
+import { PageRevisionDataSchema } from "@tpb/contracts";
 import { PagesController } from "./pages.controller";
 import { AdminPagesController } from "./admin-pages.controller";
 
@@ -182,7 +183,7 @@ describe("AdminPagesController", () => {
 
   it("publish membuat snapshot terbit + revisi", async () => {
     const prisma = makePrisma();
-    prisma.tx.page.findUnique.mockResolvedValue(pageRow({ blocks: [blockRow()] }));
+    prisma.tx.page.findUnique.mockResolvedValue(pageRow({ publishedData: null, blocks: [blockRow()] }));
     const controller = new AdminPagesController(prisma as any);
     const out = await controller.publish("p1", { user: admin } as any);
     expect(prisma.tx.page.update).toHaveBeenCalledWith(
@@ -190,6 +191,36 @@ describe("AdminPagesController", () => {
     );
     expect(prisma.tx.pageRevision.create).toHaveBeenCalledTimes(1);
     expect(out.page.status).toBe("published");
+  });
+
+  it("publish ulang tanpa perubahan tidak menambah revisi atau mengubah publishedAt", async () => {
+    const prisma = makePrisma();
+    const published = PageRevisionDataSchema.parse({
+      page: { title: "Beranda (draft)", slug: "beranda", seoTitle: "", seoDescription: "", ogImage: null },
+      blocks: [{ id: "22222222-2222-4222-8222-222222222222", type: "heading", data: { text: "Halo", level: 2, align: "left" }, isVisible: true }],
+    });
+    prisma.tx.page.findUnique.mockResolvedValue(pageRow({ publishedData: published, blocks: [blockRow()] }));
+    const controller = new AdminPagesController(prisma as any);
+    const out = await controller.publish("p1", { user: admin } as any);
+    const updateArgs = prisma.tx.page.update.mock.calls.at(-1)![0];
+    expect(updateArgs.data.publishedAt).toBeUndefined();
+    expect(updateArgs.data.publishedData).toBeUndefined();
+    expect(prisma.tx.pageRevision.create).not.toHaveBeenCalled();
+    expect(out.page.status).toBe("published");
+  });
+
+  it("publish menerima blok docLink dan menolak tautan tidak aman", async () => {
+    const prisma = makePrisma();
+    prisma.tx.page.findUnique.mockResolvedValue(pageRow({ blocks: [blockRow({ type: "docLink", data: { kicker: "Akademik", title: "Kurikulum", links: [{ label: "Panduan", href: "https://drive.google.com/x" }] } })] }));
+    const controller = new AdminPagesController(prisma as any);
+    const out = await controller.publish("p1", { user: admin } as any);
+    const updateArgs = prisma.tx.page.update.mock.calls.at(-1)![0];
+    expect(updateArgs.data.publishedData.blocks[0].type).toBe("docLink");
+    expect(out.page.status).toBe("published");
+
+    const unsafe = makePrisma();
+    unsafe.tx.page.findUnique.mockResolvedValue(pageRow({ blocks: [blockRow({ type: "docLink", data: { links: [{ label: "X", href: "javascript:alert(1)" }] } })] }));
+    await expect(new AdminPagesController(unsafe as any).publish("p1", { user: admin } as any)).rejects.toThrow();
   });
 
   it("publish halaman tanpa blok -> 400", async () => {
