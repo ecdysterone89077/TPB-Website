@@ -87,6 +87,20 @@ describe("App — teks sistem", () => {
     await waitFor(() => expect(document.title).toBe("Situs Bermasalah · TPB UNU Purwokerto"));
   });
 
+  it("menampilkan seluruh blok halaman walau dipasang bertahap", async () => {
+    api.getSettings.mockResolvedValue(settings());
+    api.getPage.mockResolvedValue({
+      ...page,
+      blocks: Array.from({ length: 5 }, (_, index) => ({ id: `b${index}`, type: "heading", data: { text: `Bagian ${index}`, level: 2, align: "left" }, isVisible: true })),
+    });
+
+    render(<App />);
+
+    for (let index = 0; index < 5; index++) {
+      expect(await screen.findByText(`Bagian ${index}`)).toBeTruthy();
+    }
+  });
+
   it("memakai judul bawaan saat teks tidak diatur", async () => {
     api.getSettings.mockResolvedValue(settings());
     api.getPage.mockResolvedValue(null);

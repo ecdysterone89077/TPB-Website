@@ -4,6 +4,7 @@ import { ValidationPipe } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
+import compression from "compression";
 import cookieParser from "cookie-parser";
 import express from "express";
 import { randomUUID } from "node:crypto";
@@ -12,6 +13,7 @@ import { config } from "./config";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
+  app.use(compression());
   // Bundel konten penuh bisa melebihi limit global; khusus route impor (ADMIN) dinaikkan.
   // Verifikasi token ditempatkan sebelum parser agar body besar anonim tidak diproses.
   const importJwt = new JwtService({ secret: config.jwtAccessSecret });

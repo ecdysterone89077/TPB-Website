@@ -50,7 +50,25 @@ function PublicApp() {
   const [page, setPage] = useState<PublicPage | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "notfound" | "error">("loading");
   const [pmb, setPmb] = useState(false);
+  const [mountedBlocks, setMountedBlocks] = useState(0);
   useReveal();
+
+  useEffect(() => {
+    if (!page) {
+      setMountedBlocks(0);
+      return;
+    }
+    const target = window.location.hash && window.location.hash !== "#" ? page.blocks.length : 0;
+    setMountedBlocks(target);
+    if (target >= page.blocks.length) return;
+    let count = target;
+    let frame = requestAnimationFrame(function step() {
+      count = count === 0 ? 1 : Math.min(count + 4, page.blocks.length);
+      setMountedBlocks(count);
+      if (count < page.blocks.length) frame = requestAnimationFrame(step);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [page]);
 
   useEffect(() => {
     let alive = true;
@@ -125,9 +143,9 @@ function PublicApp() {
     <div className="min-h-full bg-cream font-sans text-midnight">
       <Header brand={settings.brand} navigation={site.nav} blocks={page.blocks} slug={slug} onAdmin={() => { window.location.hash = "admin"; }} />
       <main>
-        {page.blocks.map((block, index) => <BlockRenderer key={block.id ?? `blok-${index}`} block={block} onDaftar={onDaftar} />)}
+        {page.blocks.slice(0, mountedBlocks).map((block, index) => <BlockRenderer key={block.id ?? `blok-${index}`} block={block} onDaftar={onDaftar} />)}
       </main>
-      <Footer footer={settings.footer} />
+      {mountedBlocks >= page.blocks.length ? <Footer footer={settings.footer} /> : null}
       <BackToTop />
       {pmb && <Pmb onClose={() => setPmb(false)} programs={pmbPrograms} />}
     </div>

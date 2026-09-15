@@ -33,36 +33,47 @@ dari production build. Alasan: build prod yang diukur, bukan dev server.
 
 ## Terukur, belum ditegakkan (ratchet: tidak boleh turun, toleransi 0.5%)
 
-Diperbarui 2026-09-15 (angka) setelah PR #7–#9 (navigasi otomatis, bundel konten,
-tautan dokumen & teks sistem); pengukuran ulang pada checkout ini. **Menunggu review owner.**
+Diperbarui 2026-09-15 (angka) setelah PR #7–#12 (navigasi otomatis, bundel konten,
+tautan dokumen & teks sistem, hardening deploy, panel ramah pemula, optimasi performa
++ dependensi); pengukuran ulang pada checkout ini. **Menunggu review owner.**
 Target dan ambang tidak diubah.
 
 | Metrik | Hari ini (2026-09-15) | Arah |
 |---|---|---|
 | Coverage proyek API (lines) | 89.6% (`jest --coverage`, 181 test lolos, ~20 dtk) | tidak boleh turun |
-| Coverage proyek web (lines) | 57.9% (`vitest run --coverage`, 129 test lolos, ~23 dtk) | tidak boleh turun |
-| Bundle web (main JS) | 290.14 kB (gzip 86.68 kB) — chunk admin terpisah (lazy, dimuat hanya di `#admin`); **naik 2.1% dari baseline 284.2 kB, toleransi ratchet 0.5% terlampaui (temuan WARN dicatat)** | tidak boleh tumbuh |
+| Coverage proyek web (lines) | 59.3% (`vitest run --coverage`, 135 test lolos, ~25 dtk) | tidak boleh turun |
+| Bundle web (main JS) | 277.99 kB (gzip 84.90 kB) — chunk `HeavyBlocks` 13.19 kB dimuat setelah paint pertama, chunk admin terpisah (lazy); **di bawah baseline 284.2 kB (temuan ratchet PR #7–#9 tertutup)** | tidak boleh tumbuh |
 | Typecheck + lint | lolos semua paket | harus tetap lolos |
 | Floor scan (supresi/stub/skip) | bersih | harus tetap bersih |
-| LCP halaman utama | ~4045ms (median 3 run lighthouse mobile pada preview 4173; FCP ~1459ms, TBT ~861ms, CLS 0) | turun ke ≤ 2500ms |
-| A11y halaman utama | 0 temuan critical/serious (skor 100, 3 run) | nol critical/serious |
+| LCP halaman utama | ~2443ms (median 5 run lighthouse mobile pada preview 4173, rentang 2333–2445ms; FCP ~1.4 dtk, TBT ~80ms, CLS 0) — **memenuhi target ≤2500ms** | turun ke ≤ 2500ms |
+| A11y halaman utama | 0 temuan critical/serious (skor 100, 5 run) | nol critical/serious |
 
-Catatan LCP: baseline lama 2782ms diukur pada situs 1-endpoint `GET /v1/content`
-yang merender 19 modul. Setelah migrasi blok, halaman mengambil 3 endpoint
-(settings/nav/page) dan merender 28 blok termasuk gambar hero eksternal, sehingga
-LCP naik. Target ≤2500ms tetap berlaku; kandidat perbaikan berikutnya: gambar hero
-disajikan dari `MEDIA_DIR` (bukan CDN eksternal), mengurangi endpoint awal, dan/atau
-prerender rute utama.
+Catatan LCP: perbaikan datang dari render bertahap 28 blok (header/hero dulu),
+code-split komponen blok berat (`HeavyBlocks`), dan kompresi gzip respons API.
+Baseline lama 2782ms diukur pada situs 1-endpoint `GET /v1/content`; kandidat
+perbaikan lanjutan bila perlu: gambar hero dari `MEDIA_DIR` dan/atau prerender rute
+utama. Catatan metodologi: run pertama setelah mesin idle bisa lebih tinggi
+(cold start); median run stabil dipakai sesuai aturan.
 
-Temuan WARN terbuka (tidak ditutup sebagai pengecualian): kenaikan bundle main
-(+5.94 kB dari baseline), LCP di atas target, dan 14 temuan high `osv-scanner`
-(multer/deepmerge-ts/qs) yang menunggu keputusan owner.
+Temuan WARN terbuka: tidak ada. Kenaikan bundle main (PR #7–#9) sudah tertutup
+(277.99 kB < baseline) dan LCP memenuhi target. Temuan `osv-scanner` sudah nol
+(lihat bagian di bawah).
 
-## Temuan awal osv-scanner (warn, perbaikan terpisah — bukan pengecualian)
+## Temuan osv-scanner — SELESAI (2026-09-15)
 
-14 high dari `pnpm-lock.yaml`: `multer` 1.4.5-lts.2 (fix 2.x, breaking),
-`deepmerge-ts` 7.1.5 (fix 8.0.0), `qs` 6.15.3 (fix 6.16.0). Butuh keputusan
-owner sebelum upgrade; tidak ditutup sebagai exception tanpa owner + tanggal.
+Awalnya 21 temuan (14 high): `multer` 1.4.5-lts.2, `deepmerge-ts` 7.1.5,
+`qs` 6.15.3, `sanitize-html` 2.13.1. Ditutup lewat upgrade, bukan pengecualian:
+
+- `express` 4.21.2 → 5.2.1 (menyelaraskan dengan `@nestjs/platform-express` 11,
+  menghilangkan `qs` 6.15.3).
+- `multer` → ^2.3.0 (langsung) + override `pnpm.overrides` untuk pin Nest 2.2.0;
+  upload media diverifikasi E2E.
+- `sanitize-html` 2.13.1 → 2.17.7 (CVE XSS); ESM `htmlparser2` ditangani lewat
+  `transformIgnorePatterns` Jest; sanitasi diverifikasi E2E.
+- `deepmerge-ts` 7.1.5 → 8.0.2 via override (dipakai `@prisma/config`);
+  `prisma validate` + `prisma generate` diverifikasi.
+
+Hasil pemindaian ulang: **0 temuan** (`osv-scanner scan source -r .`).
 
 ## Pengecualian
 
