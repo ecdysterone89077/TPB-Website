@@ -152,9 +152,9 @@ model SiteStat {
 }
 
 // ------------------------------------------------------------- site content
-
-// Singleton row: key = "main". data NULL = belum dikonfigurasi (no-fallback policy).
-// Legacy — dipertahankan untuk aggregator fallback. Modul baru di site_modules.
+// DEPRECATED (legacy): tabel ini masih dibuat oleh migration agar riwayat skema konsisten,
+// tetapi sudah TIDAK dipakai runtime — halaman+blok menggantikannya (lihat model Page/Block).
+// Hapus tabelnya di server dengan `pnpm content:drop-legacy -- --yes` setelah migrasi konten.
 model SiteContent {
   key       String    @id @db.VarChar(64)
   data      Json?

@@ -6,7 +6,7 @@ import { PrismaClient } from "@prisma/client";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { SiteContentSchema } from "@tpb/contracts";
+import { buildMigration } from "../../content-migration/src/mapping";
 
 const prisma = new PrismaClient();
 
@@ -94,59 +94,52 @@ async function main() {
 
   const gallery = readJson("gallery.json");
   assertSource(manifest, "gallery", gallery);
-  const galleryRows = asArray(gallery);
-  for (const g of galleryRows) {
-    if (!g?.image) continue;
-    const image = String(g.image);
-    const imageHash = sourceHash(image);
-    await prisma.galleryItem.upsert({ where: { imageHash }, create: { image, imageHash, caption: g.caption ?? null, link: g.link ?? null }, update: { image, caption: g.caption ?? null, link: g.link ?? null } });
-  }
-  const galleryExpected = galleryRows.filter((g) => g?.image).length;
-  const importedImageHashes = galleryRows.filter((g) => g?.image).map((g) => sourceHash(String(g.image)));
-  const galleryCount = importedImageHashes.length ? await prisma.galleryItem.count({ where: { imageHash: { in: importedImageHashes } } }) : 0;
-  results.gallery = exactResult(galleryExpected, galleryCount);
+  const galleryRows = asArray(gallery).filter((g) => !!g?.image);
 
   const content = readJson("content.json");
   assertSource(manifest, "content", content);
-  // Validate before writing: the public site and the API both reject malformed SiteContent.
-  let contentData: unknown = null;
-  if (content != null) {
-    const parsed = SiteContentSchema.safeParse(content);
-    if (!parsed.success) {
-      throw new Error(`content.json tidak sesuai SiteContentSchema: ${parsed.error.issues.map((i: any) => `${i.path.join(".")}: ${i.message}`).join("; ")}`);
-    }
-    contentData = parsed.data;
-  }
-  const contentRow = await prisma.siteContent.upsert({ where: { key: "main" }, create: { key: "main", data: contentData as any }, update: { data: contentData as any } });
-  const contentOk = (contentData == null) === (contentRow.data == null);
-  results.content = { expected: contentData == null ? 0 : 1, actual: contentRow?.data != null ? 1 : 0, status: contentOk ? "ok" : "mismatch" };
-
-  // modular: pecah content jadi site_modules (19 key) — idempoten
-  if (contentData != null && typeof contentData === "object") {
-    const modules = contentData as Record<string, unknown>;
-    for (const [key, value] of Object.entries(modules)) {
-      await prisma.siteModule.upsert({ where: { key }, create: { key, data: value as any }, update: { data: value as any } });
-    }
-    const moduleKeys = Object.keys(modules);
-    const moduleCount = moduleKeys.length ? await prisma.siteModule.count({ where: { key: { in: moduleKeys } } }) : 0;
-    results.siteModules = exactResult(moduleKeys.length, moduleCount);
-  } else {
-    results.siteModules = { expected: 0, actual: 0, status: "ok" };
-  }
-
-  // stats: stored inside content JSON in the legacy system; also importable standalone
-  const stats = readJson("stats.json");
-  assertSource(manifest, "stats", stats);
-  const statRows = asArray(stats);
+  if (content != null && (typeof content !== "object" || Array.isArray(content))) throw new Error("content.json harus berupa objek modul.");
+  const statRows = asArray(readJson("stats.json"));
   if (statRows.length > 100) throw new Error("stats.json melebihi batas 100 baris.");
-  await prisma.$transaction([
-    prisma.siteStat.deleteMany(),
-    ...statRows.slice(0, 100).map((st: any, i: number) =>
-      prisma.siteStat.create({ data: { value: Number(st.value) || 0, suffix: String(st.suffix ?? "").slice(0, 20), label: String(st.label ?? "").slice(0, 160), ord: i } }),
-    ),
-  ]);
-  const statCount = await prisma.siteStat.count();
-  results.stats = exactResult(statRows.length, statCount);
+
+  const plan = buildMigration({
+    modules: (content ?? {}) as Record<string, unknown>,
+    siteStats: statRows.map((st: any) => ({ value: Number(st?.value) || 0, suffix: String(st?.suffix ?? "").slice(0, 20), label: String(st?.label ?? "").slice(0, 160) })),
+    gallery: galleryRows.map((g: any) => ({ image: String(g.image), caption: g.caption ?? null, kind: g.kind ?? null, title: g.title ?? null, thumb: g.thumb ?? null })),
+  });
+  if (plan.warnings.length) console.warn(`Peringatan migrasi: ${plan.warnings.join(" | ")}`);
+
+  const HOME_SLUG = "beranda";
+  const snapshot = { page: { title: plan.page.title, slug: HOME_SLUG, seoTitle: "", seoDescription: "", ogImage: null }, blocks: plan.page.blocks };
+  await prisma.$transaction(async (tx) => {
+    if (plan.settings) {
+      await tx.siteSetting.upsert({ where: { key: "main" }, create: { key: "main", data: plan.settings as any }, update: { data: plan.settings as any } });
+    }
+    await tx.navItem.deleteMany();
+    const createLevel = async (nodes: typeof plan.nav, parentId: string | null) => {
+      for (let position = 0; position < nodes.length; position++) {
+        const node = nodes[position];
+        const created = await tx.navItem.create({ data: { parentId, label: node.label, href: node.href, openInNewTab: node.openInNewTab ?? false, position } });
+        if (node.children?.length) await createLevel(node.children, created.id);
+      }
+    };
+    await createLevel(plan.nav, null);
+
+    const pageData = { title: plan.page.title, status: "published" as const, publishedAt: new Date(), publishedData: snapshot as any };
+    const page = await tx.page.upsert({ where: { slug: HOME_SLUG }, create: { slug: HOME_SLUG, ...pageData }, update: pageData });
+    await tx.block.deleteMany({ where: { pageId: page.id } });
+    for (let position = 0; position < plan.page.blocks.length; position++) {
+      const block = plan.page.blocks[position];
+      await tx.block.create({ data: { pageId: page.id, type: block.type, position, data: block.data as any, isVisible: block.isVisible, anchor: block.anchor ?? null } });
+    }
+    await tx.pageRevision.create({ data: { pageId: page.id, data: snapshot as any } });
+  });
+
+  const countNav = (nodes: { children?: unknown[] }[]): number => nodes.reduce((total, node) => total + 1 + countNav((node.children ?? []) as { children?: unknown[] }[]), 0);
+  results.blocks = exactResult(plan.page.blocks.length, await prisma.block.count({ where: { page: { slug: HOME_SLUG } } }));
+  results.nav = exactResult(countNav(plan.nav as { children?: unknown[] }[]), await prisma.navItem.count());
+  const settingsRow = await prisma.siteSetting.findUnique({ where: { key: "main" } });
+  results.settings = { expected: plan.settings ? 1 : 0, actual: settingsRow?.data != null ? 1 : 0, status: (settingsRow?.data != null) === !!plan.settings ? "ok" : "mismatch" };
 
   writeFileSync(path.join(OUT, "import-manifest.json"), JSON.stringify({ results, at: new Date().toISOString() }, null, 2), "utf8");
   console.log(JSON.stringify(results, null, 2));

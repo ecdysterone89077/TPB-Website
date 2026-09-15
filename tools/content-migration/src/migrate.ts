@@ -51,16 +51,21 @@ const buildNavTree = (rows: { id: string; parentId: string | null; label: string
 };
 
 async function loadLegacy() {
-  const [modules, stats, gallery] = await Promise.all([
-    prisma.siteModule.findMany(),
-    prisma.siteStat.findMany({ orderBy: [{ ord: "asc" }, { id: "asc" }] }),
-    prisma.galleryItem.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
-  ]);
-  return {
-    modules: Object.fromEntries(modules.map((row) => [row.key, row.data])) as Record<string, unknown>,
-    siteStats: stats.map((row) => ({ value: row.value, suffix: row.suffix, label: row.label })),
-    gallery: gallery.map((row) => ({ image: row.image, caption: row.caption, kind: row.kind, title: row.title, thumb: row.thumb })),
-  };
+  try {
+    const [modules, stats, gallery] = await Promise.all([
+      prisma.siteModule.findMany(),
+      prisma.siteStat.findMany({ orderBy: [{ ord: "asc" }, { id: "asc" }] }),
+      prisma.galleryItem.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+    ]);
+    return {
+      modules: Object.fromEntries(modules.map((row) => [row.key, row.data])) as Record<string, unknown>,
+      siteStats: stats.map((row) => ({ value: row.value, suffix: row.suffix, label: row.label })),
+      gallery: gallery.map((row) => ({ image: row.image, caption: row.caption, kind: row.kind, title: row.title, thumb: row.thumb })),
+    };
+  } catch (error: any) {
+    if (error?.code === "P2021") return null;
+    throw error;
+  }
 }
 
 async function reconcile(plan: ReturnType<typeof buildMigration>) {
@@ -95,6 +100,10 @@ async function reconcile(plan: ReturnType<typeof buildMigration>) {
 
 async function main() {
   const legacy = await loadLegacy();
+  if (!legacy) {
+    console.log("Tabel legacy sudah dihapus — tidak ada yang dimigrasikan (no-op).");
+    return;
+  }
   const plan = buildMigration(legacy);
   const checksum = sha(plan.page.blocks);
 

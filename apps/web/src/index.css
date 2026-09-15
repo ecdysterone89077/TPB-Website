@@ -129,3 +129,53 @@ html {
     @apply rounded-lg border border-red-200 px-3 py-2 text-sm text-red-600 transition hover:bg-red-50;
   }
 }
+
+/* ------------------------------------------------ rich text (blok & HTML) */
+
+@layer components {
+  .rich-text {
+    @apply text-[15px] leading-relaxed text-midnight/80;
+  }
+  .rich-text > * + * {
+    @apply mt-4;
+  }
+  .rich-text h2 {
+    @apply font-display text-3xl font-extrabold text-midnight;
+  }
+  .rich-text h3 {
+    @apply font-display text-2xl font-bold text-midnight;
+  }
+  .rich-text h4 {
+    @apply font-display text-xl font-bold text-midnight;
+  }
+  .rich-text ul {
+    @apply list-disc space-y-1 pl-6;
+  }
+  .rich-text ol {
+    @apply list-decimal space-y-1 pl-6;
+  }
+  .rich-text a {
+    @apply font-semibold text-leaf-600 underline decoration-leaf-600/40 underline-offset-2 hover:decoration-leaf-600;
+  }
+  .rich-text blockquote {
+    @apply border-l-4 border-gold/70 bg-cream px-5 py-3 font-display text-lg italic text-midnight/75;
+  }
+  .rich-text code {
+    @apply rounded bg-midnight/5 px-1.5 py-0.5 font-mono text-[13px];
+  }
+  .rich-text pre {
+    @apply overflow-auto rounded-2xl bg-midnight p-5 font-mono text-[13px] text-white;
+  }
+  .rich-text pre code {
+    @apply bg-transparent p-0 text-white;
+  }
+  .rich-text hr {
+    @apply border-midnight/10;
+  }
+  .rich-text img {
+    @apply rounded-2xl;
+  }
+  .rich-text iframe {
+    @apply aspect-video w-full rounded-2xl;
+  }
+}

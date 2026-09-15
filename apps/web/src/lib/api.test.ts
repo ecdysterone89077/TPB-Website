@@ -38,7 +38,7 @@ describe("api.listPublic", () => {
   it("melempar pesan error dari server", async () => {
     stubFetch({ message: "gagal" }, 500);
 
-    await expect(api.getStats()).rejects.toThrow("gagal");
+    await expect(api.getPages()).rejects.toThrow("gagal");
   });
 
   it("menampilkan path field yang gagal validasi dari issues", async () => {
@@ -47,7 +47,7 @@ describe("api.listPublic", () => {
       400,
     );
 
-    await expect(api.saveAkademik({} as never)).rejects.toThrow(/dosen\.people\.3\.photo/);
+    await expect(api.registerPmb({} as never)).rejects.toThrow(/dosen\.people\.3\.photo/);
   });
 
   it("menormalisasi path array dan memotong maksimal 3 issues", async () => {
@@ -65,7 +65,7 @@ describe("api.listPublic", () => {
     );
 
     try {
-      await api.saveAkademik({} as never);
+      await api.registerPmb({} as never);
       throw new Error("seharusnya gagal");
     } catch (error: any) {
       expect(error.message).toContain("dosen.people.3.photo: salah");

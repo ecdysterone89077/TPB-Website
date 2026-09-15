@@ -6,6 +6,10 @@
     {
       "source": "/media/:path*",
       "destination": "https://api.tpb.unupurwokerto.ac.id/media/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }

@@ -12,6 +12,7 @@ import { PrismaClient } from "@prisma/client";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { buildMigration } from "../../content-migration/src/mapping";
 
 const prisma = new PrismaClient();
 const OUT = path.resolve("out");
@@ -82,47 +83,37 @@ async function main() {
   check("pmb", pmbRows.length, dbPmb.length);
   check("pmb.idempotencyKeys", pmbRows.map(importKey).sort(), dbPmb.map((r) => r.idempotencyKey).sort());
 
-  // ---------------------------------------------------------------- gallery
-  const gallery = readJson("gallery.json");
-  checkChecksum("gallery", gallery);
-  const galleryRows = asArray(gallery).filter((g) => !!g?.image);
-  const expectedImageHashes = galleryRows.map((g) => hash(String(g.image)));
-  const dbGallery = expectedImageHashes.length ? await prisma.galleryItem.findMany({ where: { imageHash: { in: expectedImageHashes } }, select: { image: true } }) : [];
-  check("gallery", galleryRows.length, dbGallery.length);
-  const expectedImages = galleryRows.map((g) => String(g.image)).sort((a, b) => a.localeCompare(b));
-  const actualImages = dbGallery.map((g) => g.image).sort((a, b) => a.localeCompare(b));
-  check("gallery.images", expectedImages, actualImages);
-
-  // ---------------------------------------------------------------- content
+  // ------------------------------------------------- content → halaman+blok
   const content = readJson("content.json");
   checkChecksum("content", content);
-  const contentRow = await prisma.siteContent.findUnique({ where: { key: "main" } });
-  const contentPresent = content != null;
-  const dbContentPresent = contentRow?.data != null;
-  check("content.present", contentPresent, dbContentPresent);
-  if (contentPresent && dbContentPresent) {
-    check("content.checksum", hash(content), hash(contentRow?.data));
-  }
-
-  // site_modules modular — tiap key di content.json harus ada di site_modules
-  if (contentPresent && content != null && typeof content === "object") {
-    const expectedModules = content as Record<string, unknown>;
-    const moduleKeys = Object.keys(expectedModules);
-    const dbModules = moduleKeys.length ? await prisma.siteModule.findMany({ where: { key: { in: moduleKeys } }, select: { key: true, data: true } }) : [];
-    check("siteModules", moduleKeys.length, dbModules.length);
-    for (const k of moduleKeys) {
-      const expected = (expectedModules as any)[k];
-      const actual = dbModules.find((m) => m.key === k)?.data ?? null;
-      check(`siteModules.${k}`, hash(expected), hash(actual));
-    }
-  }
-
-  // ------------------------------------------------------------------ stats
+  const gallery = readJson("gallery.json");
+  checkChecksum("gallery", gallery);
   const stats = readJson("stats.json");
   checkChecksum("stats", stats);
+  const galleryRows = asArray(gallery).filter((g) => !!g?.image);
   const statRows = asArray(stats);
-  const dbStats = await prisma.siteStat.count();
-  check("stats", statRows.length, dbStats);
+
+  const plan = buildMigration({
+    modules: (content ?? {}) as Record<string, unknown>,
+    siteStats: statRows.map((st: any) => ({ value: Number(st?.value) || 0, suffix: String(st?.suffix ?? "").slice(0, 20), label: String(st?.label ?? "").slice(0, 160) })),
+    gallery: galleryRows.map((g: any) => ({ image: String(g.image), caption: g.caption ?? null, kind: g.kind ?? null, title: g.title ?? null, thumb: g.thumb ?? null })),
+  });
+
+  const page = await prisma.page.findUnique({ where: { slug: "beranda" }, include: { blocks: { orderBy: [{ position: "asc" }, { id: "asc" }] } } });
+  check("page.beranda", 1, page ? 1 : 0);
+  if (page) {
+    check("page.blocks.count", plan.page.blocks.length, page.blocks.length);
+    const dbBlockKeys = page.blocks.map((row) => `${row.type}@${row.anchor ?? "-"}@${row.isVisible ? "on" : "off"}:${hash(row.data)}`);
+    const planBlockKeys = plan.page.blocks.map((block) => `${block.type}@${block.anchor ?? "-"}@${block.isVisible ? "on" : "off"}:${hash(block.data)}`);
+    check("page.blocks.checksums", planBlockKeys, dbBlockKeys);
+  }
+
+  const dbNavCount = await prisma.navItem.count();
+  const countNav = (nodes: { children?: unknown[] }[]): number => nodes.reduce((total, node) => total + 1 + countNav((node.children ?? []) as { children?: unknown[] }[]), 0);
+  check("nav.count", countNav(plan.nav as { children?: unknown[] }[]), dbNavCount);
+
+  const settingsRow = await prisma.siteSetting.findUnique({ where: { key: "main" } });
+  check("settings.present", plan.settings ? 1 : 0, settingsRow?.data != null ? 1 : 0);
 
   console.log(lines.length ? lines.join("\n") : "Reconcile OK — manifest, out/, dan MySQL konsisten.");
   if (mismatches > 0) process.exit(2);

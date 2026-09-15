@@ -1,71 +1,50 @@
 import { useEffect, useMemo, useState } from "react";
-import type { SiteContent } from "@tpb/contracts";
+import type { Block, NavItemInput } from "@tpb/contracts";
 import { api } from "../../lib/api";
+import { HOME_SLUG, navigate } from "../../lib/router";
 
 type Entry = { group: string; title: string; text: string; href: string };
 
-const has = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
-
-function buildIndex(content: SiteContent): Entry[] {
-  const out: Entry[] = [];
-  const navLabel = (hrefs: string[], fallback: string) =>
-    content.navigation.find((n) => hrefs.includes(n.href))?.label ?? fallback;
-  const G_HOME = navLabel(["/"], "Beranda");
-  const G_PROFIL = navLabel(["/#profil"], "Profil");
-  const G_AKADEMIK = navLabel(["/#akademik"], "Akademik");
-  const G_PENELITIAN = navLabel(["/#penelitian"], "Penelitian");
-  const G_PENGABDIAN = navLabel(["/#pengabdian"], "Pengabdian");
-  const G_KEMAHASISWAAN = navLabel(["/#kemahasiswaan"], "Kemahasiswaan");
-  const G_KONTAK = content.footer.infoTitle || "Kontak";
-  const push = (group: string, title: string, parts: unknown[], href: string) => {
-    const text = parts.filter(has).join(" ").slice(0, 220);
-    if (!title.trim() && !text) return;
-    out.push({ group, title: title.trim() || text.slice(0, 60), text, href });
-  };
-  const h = content.hero;
-  push(G_HOME, "Selamat Datang", [h.badge, h.line1, h.highlight, h.line2, h.subtitle], "/#top");
-  const a = content.about;
-  push(G_PROFIL, a.title, [a.kicker, a.title, a.body, ...a.points], "/#profil");
-  for (const card of content.programs.cards)
-    push(G_AKADEMIK, card.title, [card.tag, card.title, card.body], "/#akademik");
-  for (const area of content.research.areas)
-    push(G_PENELITIAN, area.title, [area.no, area.title, area.body], "/#penelitian");
-  for (const m of content.research.metrics) push(G_PENELITIAN, m.l, [m.v, m.l], "/#penelitian");
-  const cm = content.community;
-  push(G_PENGABDIAN, cm.title, [cm.kicker, cm.title, cm.body, ...cm.items], "/#pengabdian");
-  for (const card of content.studentLife.cards)
-    push(G_KEMAHASISWAAN, card.title, [card.tag, card.title, card.body], "/#kemahasiswaan");
-  const p = content.profil;
-  for (const t of p.sejarah.timeline) push(G_PROFIL, "Sejarah " + t.year, [t.year, t.text], "/#sejarah");
-  push(G_PROFIL, "Visi & Misi", [p.visiMisi.visi, ...p.visiMisi.misi], "/#visi-misi");
-  if (p.visiMisi.tujuan && p.visiMisi.tujuan.length > 0) push(G_PROFIL, "Tujuan", [...p.visiMisi.tujuan], "/#visi-misi");
-  for (const person of p.struktur.people)
-    push(G_PROFIL, person.name, [person.role, person.name], "/#struktur");
-  push(G_PROFIL, "Sambutan Kaprodi", [p.sambutan.quote, p.sambutan.name], "/#sambutan");
-  push(G_AKADEMIK, content.akademik.kurikulum.title, [content.akademik.kurikulum.intro, ...content.akademik.kurikulum.clusters], "/#kurikulum");
-  for (const item of content.akademik.kalender.items)
-    push(G_AKADEMIK, item.e, [item.d, item.e], "/#kalender");
-  for (const d of content.akademik.dosen.people)
-    push(G_AKADEMIK, d.name, [d.field, ...(d.details ?? [])], "/#dosen");
-  for (const lab of content.akademik.laboratorium.labs)
-    push(G_AKADEMIK, lab.name, [lab.name, lab.desc], "/#laboratorium");
-  for (const pub of content.penelitian.publikasi.pubs)
-    push(G_PENELITIAN, pub.title, [pub.title, pub.venue, pub.year], "/#publikasi");
-  for (const partner of content.penelitian.kolaborasi.partners)
-    push(G_PENELITIAN, partner, [partner], "/#kolaborasi");
-  for (const d of content.pengabdian.programDesa.desa)
-    push(G_PENGABDIAN, d.name, [d.name, d.body], "/#program-desa");
-  for (const item of content.pengabdian.kegiatan.items)
-    push(G_PENGABDIAN, item.t, [item.t, item.d], "/#kegiatan");
-  for (const item of content.kemahasiswaan.beasiswa.items)
-    push(G_KEMAHASISWAAN, item.name, [item.name, item.body], "/#beasiswa");
-  for (const item of content.kemahasiswaan.prestasi.items)
-    push(G_KEMAHASISWAAN, item, [item], "/#prestasi");
-  push(G_KONTAK, content.footer.contact.email, [content.footer.contact.phone, content.footer.contact.email, content.footer.contact.address], "/#kontak");
+const flattenStrings = (value: unknown, out: string[] = [], depth = 0): string[] => {
+  if (depth > 6 || value == null) return out;
+  if (typeof value === "string") {
+    if (value.trim()) out.push(value);
+    return out;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) flattenStrings(item, out, depth + 1);
+    return out;
+  }
+  if (typeof value === "object") {
+    for (const item of Object.values(value as Record<string, unknown>)) flattenStrings(item, out, depth + 1);
+  }
   return out;
+};
+
+export function buildBlockIndex(blocks: Block[], navigation: NavItemInput[], slug: string = HOME_SLUG): Entry[] {
+  const base = slug === HOME_SLUG ? "/" : `/${slug}`;
+  const labelFor = (anchor?: string) => {
+    const flat: NavItemInput[] = [];
+    const walk = (items: NavItemInput[]) => { for (const item of items) { flat.push(item); walk(item.children ?? []); } };
+    walk(navigation);
+    if (!anchor) return "Halaman";
+    return flat.find((n) => n.href.includes(`#${anchor}`))?.label ?? anchor.replace(/-/g, " ");
+  };
+  return blocks
+    .filter((block) => block.isVisible !== false)
+    .map((block) => {
+      const parts = flattenStrings(block.data).slice(0, 30);
+      return {
+        group: labelFor(block.anchor),
+        title: parts[0] ?? block.type,
+        text: parts.join(" ").slice(0, 220),
+        href: block.anchor ? `${base}#${block.anchor}` : base,
+      };
+    })
+    .filter((entry) => entry.text.length > 0);
 }
 
-export function SearchButton({ content, compact = false }: { content: SiteContent; compact?: boolean }) {
+export function SearchButton({ blocks, navigation, slug = HOME_SLUG, compact = false }: { blocks: Block[]; navigation: NavItemInput[]; slug?: string; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -86,11 +65,11 @@ export function SearchButton({ content, compact = false }: { content: SiteConten
         ? "rounded-full border border-midnight/15 px-4 py-2 text-xs font-bold"
         : "rounded-full px-4 py-2.5 text-[12px] font-bold text-midnight/70 transition hover:bg-midnight/5 hover:text-midnight"}
     >🔍 Cari</button>
-    {open && <SearchDialog content={content} onClose={() => setOpen(false)} />}
+    {open && <SearchDialog blocks={blocks} navigation={navigation} slug={slug} onClose={() => setOpen(false)} />}
   </>;
 }
 
-function SearchDialog({ content, onClose }: { content: SiteContent; onClose: () => void }) {
+function SearchDialog({ blocks, navigation, slug, onClose }: { blocks: Block[]; navigation: NavItemInput[]; slug: string; onClose: () => void }) {
   const [query, setQuery] = useState("");
   const [posts, setPosts] = useState<{ title: string; excerpt: string }[]>([]);
   useEffect(() => {
@@ -103,20 +82,20 @@ function SearchDialog({ content, onClose }: { content: SiteContent; onClose: () 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (q.length < 2) return [];
-    const base = buildIndex(content);
-    const beritaGroup = content.navigation.find((n) => n.href === "/#berita")?.label ?? content.news.title ?? "Berita";
-    const scored = base.map((e) => {
+    const base = slug === HOME_SLUG ? "/" : `/${slug}`;
+    const baseIndex = buildBlockIndex(blocks, navigation, slug);
+    const scored = baseIndex.map((e) => {
       const hay = `${e.title} ${e.text}`.toLowerCase();
       const score = hay.includes(q) ? (e.title.toLowerCase().includes(q) ? 0 : 1) : 2;
       return { e, score };
     }).filter((s) => s.score < 2);
     for (const p of posts) {
       const hay = `${p.title} ${p.excerpt}`.toLowerCase();
-      if (hay.includes(q)) scored.push({ e: { group: beritaGroup, title: p.title, text: p.excerpt.slice(0, 220), href: "/#berita" }, score: 1 });
+      if (hay.includes(q)) scored.push({ e: { group: "Berita", title: p.title, text: p.excerpt.slice(0, 220), href: `${base}#berita` }, score: 1 });
     }
     return scored.sort((x, y) => x.score - y.score).slice(0, 10).map((s) => s.e);
-  }, [query, content, posts]);
-  const go = (href: string) => { onClose(); window.location.href = href; };
+  }, [query, blocks, navigation, slug, posts]);
+  const go = (href: string) => { onClose(); navigate(href); };
   return <div className="fixed inset-0 z-[100] flex items-start justify-center bg-midnight/50 p-4 pt-24" onClick={onClose}>
     <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
       <input

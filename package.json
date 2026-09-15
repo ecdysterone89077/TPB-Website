@@ -28,6 +28,7 @@
     "content:migrate": "pnpm --filter @tpb/content-migration migrate",
     "content:migrate:write": "pnpm --filter @tpb/content-migration write",
     "content:migrate:reconcile": "pnpm --filter @tpb/content-migration reconcile",
+    "content:drop-legacy": "pnpm --filter @tpb/content-migration drop-legacy",
     "lint": "eslint .",
     "audit:env": "pnpm --filter @tpb/env-audit check",
     "check:fast": "pnpm -r typecheck && pnpm lint",
