@@ -104,12 +104,25 @@ pnpm db:migrate:deploy            # Terapkan migration yang sudah direview (stag
 
 Deployment dilakukan melalui **aaPanel Webhook** — tidak ada akses SSH dari GitHub Actions.
 
+> **Deploy pertama kali?** Ikuti panduan langkah-demi-langkah untuk pengelola VPS di [`DEPLOY.md`](./DEPLOY.md) (prasyarat, database, `.env`, Nginx, webhook, verifikasi, troubleshooting).
+
 ### Alur deployment
 
 | Trigger | Tujuan | Alur |
 |---|---|---|
-| Push ke branch `develop` | Staging | GitHub Actions → POST webhook → aaPanel jalankan script deploy |
-| Push tag `v*` | Production | GitHub Actions → approval manual → POST webhook → aaPanel jalankan script deploy |
+| Push ke branch `develop` | Staging | GitHub Actions → preflight (lint/typecheck/test) → POST webhook → aaPanel jalankan script deploy |
+| Push tag `v*` | Production | GitHub Actions → **preflight** (lint/typecheck/test) → approval manual (environment `production`) → POST webhook → aaPanel jalankan script deploy |
+
+Setiap deploy juga menjalankan `pnpm audit:env` di preflight, sehingga file `.env` yang tidak sengaja ter-commit akan menggagalkan deploy lebih awal.
+
+### Persiapan deploy pertama (sekali saja, oleh Author)
+
+1. **GitHub → Settings → Environments → `Production`**: tambahkan **Required reviewers** (selama belum diisi, approval manual tidak aktif).
+2. **GitHub → Settings → Secrets and variables → Actions**: isi `AAPANEL_STAGING_WEBHOOK_URL` dan `AAPANEL_PRODUCTION_WEBHOOK_URL` dengan URL webhook dari `DEPLOY.md` langkah 8.
+3. Buat branch **`develop`** dari `main` (staging).
+4. Rilis produksi: pastikan CI `main` hijau → buat tag `v*` → setujui approval → webhook berjalan.
+
+Catatan: workflow CI tidak otomatis berjalan pada tag; karena itu setiap deploy menjalankan **preflight** (install frozen, contracts build, lint, audit env, typecheck, test API + web) pada commit yang dideploy. Bila preflight gagal, deploy dibatalkan.
 
 ### Konfigurasi webhook di aaPanel
 
@@ -381,4 +394,6 @@ Service-role key **hanya** melalui variabel environment — tidak pernah masuk r
 
 ## Lisensi
 
-Proprietary — hak cipta milik UNU Purwokerto.
+**Proprietary — All Rights Reserved.** Hak cipta © 2026 **UNU Purwokerto**; Author: **Faunas Wisnhu Aji**.
+
+Tanpa izin tertulis dari pemegang hak cipta, siapa pun dilarang menggunakan, menyalin, memodifikasi, atau mendistribusikan proyek ini (termasuk men-deploy ke lingkungan lain). Setiap izin penggunaan hanya sah melalui perjanjian tertulis terpisah, dan—sebagai syaratnya—Author memegang kontrol penuh atas kustomisasi perangkat lunak beserta penerapannya. Teks lengkap: [`LICENSE`](./LICENSE).
