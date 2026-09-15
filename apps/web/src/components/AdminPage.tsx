@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { api, type PaginationMeta } from "../lib/api";
+import { PageBuilder } from "./admin/PageBuilder";
+import { SettingsEditor } from "./admin/SettingsEditor";
 import type {
   AdminUser,
   AuditEntry,
@@ -11,7 +13,7 @@ import type {
   Subscriber,
 } from "@tpb/contracts";
 
-type View = "dashboard" | "content" | "posts" | "pmb" | "media" | "subs" | "users" | "audit";
+type View = "dashboard" | "content" | "settings" | "posts" | "pmb" | "media" | "subs" | "users" | "audit";
 type RoleAwareUser = AdminUser & { role: Role };
 
 type PostForm = {
@@ -30,6 +32,7 @@ const PAGE_SIZE = 50;
 const NAV_ALL: { id: View; label: string; roles: Role[] }[] = [
   { id: "dashboard", label: "Dashboard", roles: ["ADMIN"] },
   { id: "content", label: "Konten Halaman", roles: ["ADMIN", "EDITOR"] },
+  { id: "settings", label: "Pengaturan Situs", roles: ["ADMIN", "EDITOR"] },
   { id: "posts", label: "Berita", roles: ["ADMIN", "EDITOR"] },
   { id: "pmb", label: "PMB", roles: ["ADMIN", "OPERATOR"] },
   { id: "media", label: "Media", roles: ["ADMIN", "EDITOR", "OPERATOR"] },
@@ -75,7 +78,8 @@ export function AdminPage() {
     <main className="flex-1 min-w-0 p-4 md:p-10 overflow-x-auto">
       <div className="md:hidden mb-5 flex gap-2 overflow-x-auto pb-1">{nav.map((item) => <button key={item.id} onClick={() => setView(item.id)} className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm ${view === item.id ? "bg-slate-900 text-white" : "bg-white text-slate-600"}`}>{item.label}</button>)}</div>
       {view === "dashboard" && <DashboardView />}
-      {view === "content" && <ContentPlaceholder />}
+      {view === "content" && <PageBuilder />}
+      {view === "settings" && <SettingsEditor />}
       {view === "posts" && <PostsView user={user} />}
       {view === "pmb" && <PmbView user={user} />}
       {view === "media" && <MediaView />}
@@ -113,21 +117,6 @@ function DashboardView() {
   return <Section title="Dashboard" action={<button onClick={load} className="button-secondary">Muat ulang</button>}><AsyncState loading={!summary && !error} error={error}>{summary && <><div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{cards.map(([label, value]) => <Panel key={label}><p className="text-3xl font-bold text-slate-900">{value}</p><p className="text-sm text-slate-500">{label}</p></Panel>)}</div><Panel><h2 className="font-semibold mb-3 text-slate-900">Aktivitas Terakhir</h2><AuditList entries={summary.audit} /></Panel></>}</AsyncState></Section>;
 }
 
-
-function ContentPlaceholder() {
-  return (
-    <Section title="Konten Halaman">
-      <Panel>
-        <h2 className="font-semibold text-slate-900">Editor konten baru sedang disiapkan</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Mulai versi ini, seluruh isi situs disusun dari blok (halaman) dan bukan lagi 19 modul JSON.
-          Editor visual yang ramah (pilih template, isi kolom, atur urutan, terbitkan) hadir pada fase berikutnya.
-        </p>
-        <p className="mt-2 text-sm text-slate-600">Sementara ini, berita, PMB, pelanggan, media, pengguna, dan audit tetap dapat dikelola dari menu di samping.</p>
-      </Panel>
-    </Section>
-  );
-}
 
 function MediaView() {
   const [media, setMedia] = useState<MediaAsset[]>([]);

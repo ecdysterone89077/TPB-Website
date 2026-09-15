@@ -100,6 +100,17 @@ describe("validasi tautan blok", () => {
     expect(BlockSchema.safeParse({ type: "heading", data: { text: "A", level: 2, align: "left" }, anchor: "" }).success).toBe(false);
     expect(BlockSchema.safeParse({ type: "heading", data: { text: "A", level: 2, align: "left" }, anchor: "a".repeat(121) }).success).toBe(false);
   });
+
+  it("anchor harus slug huruf kecil (spasi/huruf besar ditolak)", () => {
+    expect(BlockSchema.safeParse({ type: "heading", data: { text: "A", level: 2, align: "left" }, anchor: "Dosen Kami" }).success).toBe(false);
+    expect(BlockSchema.safeParse({ type: "heading", data: { text: "A", level: 2, align: "left" }, anchor: "dosen-kami" }).success).toBe(true);
+  });
+
+  it("video boleh kosong (placeholder) tetapi URL teks harus tetap aman", () => {
+    expect(BlockSchema.safeParse({ type: "video", data: { url: "" } }).success).toBe(true);
+    expect(BlockSchema.safeParse({ type: "video", data: { url: "https://" } }).success).toBe(false);
+    expect(BlockSchema.safeParse({ type: "video", data: { url: "https://www.youtube.com/watch?v=abc" } }).success).toBe(true);
+  });
 });
 
 describe("sanitizeHtml", () => {

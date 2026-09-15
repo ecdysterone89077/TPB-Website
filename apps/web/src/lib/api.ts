@@ -1,5 +1,5 @@
 import type {
-  AdminUser, AuditEntry, DashboardSummary, MediaAsset, NavItemInput, PageSummary, Post, PublicPage, Registration, SiteSettings, Subscriber,
+  AdminUser, AuditEntry, Block, DashboardSummary, MediaAsset, NavItemInput, PageSummary, Post, PublicPage, Registration, SiteSettings, Subscriber,
 } from "@tpb/contracts";
 
 const BASE = (import.meta.env.VITE_API_URL || "http://localhost:3000/v1").replace(/\/$/, "");
@@ -69,6 +69,7 @@ const jsonInit = (body: unknown, method = "POST"): RequestInit => ({ method, bod
 
 export type PaginationMeta = { limit: number; offset: number; total: number; hasMore: boolean };
 export type PageParams = { limit?: number; offset?: number };
+export type PageInputPayload = { title: string; slug: string; seoTitle?: string; seoDescription?: string; ogImage?: string | null };
 
 function pageQuery(params?: PageParams): string {
   if (!params) return "";
@@ -134,6 +135,65 @@ export const api = {
 
   async getSettings(): Promise<SiteSettings | null> {
     const d = await request<{ settings: SiteSettings | null }>(`/settings`);
+    return d.settings;
+  },
+
+  /* ------------------------------------------------- builder (admin) */
+
+  async getAdminPages(params?: PageParams): Promise<{ pages: (PageSummary & { blockCount?: number })[]; pagination: PaginationMeta }> {
+    return request<{ pages: (PageSummary & { blockCount?: number })[]; pagination: PaginationMeta }>(`/admin/pages${pageQuery(params)}`);
+  },
+
+  async getAdminPage(id: string): Promise<PublicPage & { status: "draft" | "published" }> {
+    const d = await request<{ page: PublicPage & { status: "draft" | "published" } }>(`/admin/pages/${encodeURIComponent(id)}`);
+    return d.page;
+  },
+
+  async createPage(input: PageInputPayload): Promise<PublicPage & { status: "draft" | "published" }> {
+    const d = await request<{ page: PublicPage & { status: "draft" | "published" } }>(`/admin/pages`, jsonInit(input));
+    return d.page;
+  },
+
+  async updatePage(id: string, input: PageInputPayload): Promise<PublicPage & { status: "draft" | "published" }> {
+    const d = await request<{ page: PublicPage & { status: "draft" | "published" } }>(`/admin/pages/${encodeURIComponent(id)}`, jsonInit(input, "PUT"));
+    return d.page;
+  },
+
+  async deletePage(id: string): Promise<void> {
+    await request(`/admin/pages/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+
+  async savePageBlocks(id: string, blocks: Block[]): Promise<Block[]> {
+    const d = await request<{ blocks: Block[] }>(`/admin/pages/${encodeURIComponent(id)}/blocks`, jsonInit({ blocks }, "PUT"));
+    return d.blocks;
+  },
+
+  async publishPage(id: string): Promise<PageSummary> {
+    const d = await request<{ page: PageSummary }>(`/admin/pages/${encodeURIComponent(id)}/publish`, jsonInit({}));
+    return d.page;
+  },
+
+  async unpublishPage(id: string): Promise<PageSummary> {
+    const d = await request<{ page: PageSummary }>(`/admin/pages/${encodeURIComponent(id)}/unpublish`, jsonInit({}));
+    return d.page;
+  },
+
+  async listPageRevisions(id: string): Promise<{ revisions: { id: string; createdAt: string; createdBy: string | null; data: unknown }[] }> {
+    return request<{ revisions: { id: string; createdAt: string; createdBy: string | null; data: unknown }[] }>(`/admin/pages/${encodeURIComponent(id)}/revisions`);
+  },
+
+  async restoreRevision(id: string, revisionId: string): Promise<PublicPage & { status: "draft" | "published" }> {
+    const d = await request<{ page: PublicPage & { status: "draft" | "published" } }>(`/admin/pages/${encodeURIComponent(id)}/revisions/${encodeURIComponent(revisionId)}/restore`, jsonInit({}));
+    return d.page;
+  },
+
+  async saveNav(items: NavItemInput[]): Promise<NavItemInput[]> {
+    const d = await request<{ items: NavItemInput[] }>(`/nav`, jsonInit({ items }, "PUT"));
+    return d.items;
+  },
+
+  async saveSettings(settings: SiteSettings): Promise<SiteSettings> {
+    const d = await request<{ settings: SiteSettings }>(`/settings`, jsonInit({ settings }, "PUT"));
     return d.settings;
   },
 

@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { PublicPage } from "@tpb/contracts";
-import { AdminPage } from "./components/AdminPage";
 import { Pmb } from "./components/Pmb";
 import { BlockRenderer } from "./components/public/Blocks";
 import { BackToTop, Footer } from "./components/public/ContentSections";
@@ -10,9 +9,17 @@ import { api } from "./lib/api";
 import { scrollToHash, slugFromPath, useAdminRoute, usePathname } from "./lib/router";
 import { SiteProvider, useSite } from "./lib/site";
 
+const AdminPage = lazy(() => import("./components/AdminPage").then((module) => ({ default: module.AdminPage })));
+
 export default function App() {
   const admin = useAdminRoute();
-  if (admin) return <AdminPage />;
+  if (admin) {
+    return (
+      <Suspense fallback={<div className="grid min-h-screen place-items-center bg-slate-100 text-slate-500">Memuat panel admin…</div>}>
+        <AdminPage />
+      </Suspense>
+    );
+  }
   return (
     <SiteProvider>
       <PublicApp />

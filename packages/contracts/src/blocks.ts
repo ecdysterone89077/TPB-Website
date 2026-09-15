@@ -74,7 +74,7 @@ export const ImageBlockSchema = z.object({
 });
 
 export const VideoBlockSchema = z.object({
-  url: HttpUrlSchema,
+  url: z.union([HttpUrlSchema, z.literal("")]),
   mode: z.enum(["popup", "inline"]).default("popup"),
   thumb: MediaRefSchema.optional(),
   caption: z.string().max(500).default(""),
@@ -204,13 +204,20 @@ export const BlockTypeSchema = z.enum([
 ]);
 export type BlockType = z.infer<typeof BlockTypeSchema>;
 
+export const AnchorSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(120)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, { message: "Jangkar hanya huruf kecil, angka, dan tanda hubung." });
+
 const variant = <T extends BlockType, D extends z.ZodTypeAny>(type: T, data: D) =>
   z.object({
     id: z.string().uuid().optional(),
     type: z.literal(type),
     data,
     isVisible: z.boolean().default(true),
-    anchor: z.string().trim().min(1).max(120).optional(),
+    anchor: AnchorSchema.optional(),
   });
 
 export const BlockSchema = z.discriminatedUnion("type", [
