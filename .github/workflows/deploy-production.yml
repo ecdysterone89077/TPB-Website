@@ -5,8 +5,51 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
+  # Gate teknis: deploy hanya berjalan bila commit tag lulus validasi.
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build contracts
+        run: pnpm --filter @tpb/contracts build
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Audit credentials and environment
+        run: pnpm audit:env
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Unit tests (API)
+        run: pnpm --filter @tpb/api test -- --ci
+
+      - name: Unit tests (web)
+        run: pnpm --filter @tpb/web test
+
   deploy:
+    needs: preflight
     runs-on: ubuntu-latest
     # GitHub Environment "production" = manual approval gate
     environment: production
@@ -16,6 +59,10 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
           WEBHOOK_URL: ${{ secrets.AAPANEL_PRODUCTION_WEBHOOK_URL }}
         run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "Secret AAPANEL_PRODUCTION_WEBHOOK_URL belum diisi."
+            exit 1
+          fi
           payload=$(jq -n --arg ref "$REF_NAME" '{event: "deploy", ref: $ref}')
           curl -fsSL -X POST \
             -H "Content-Type: application/json" \

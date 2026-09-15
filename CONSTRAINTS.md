@@ -33,24 +33,30 @@ dari production build. Alasan: build prod yang diukur, bukan dev server.
 
 ## Terukur, belum ditegakkan (ratchet: tidak boleh turun, toleransi 0.5%)
 
-Diperbarui 2026-09-15 (owner) setelah migrasi page builder. Target tidak berubah;
-angka di bawah adalah hasil pengukuran ulang pada checkout ini.
+Diperbarui 2026-09-15 (angka) setelah PR #7–#9 (navigasi otomatis, bundel konten,
+tautan dokumen & teks sistem); pengukuran ulang pada checkout ini. **Menunggu review owner.**
+Target dan ambang tidak diubah.
 
 | Metrik | Hari ini (2026-09-15) | Arah |
 |---|---|---|
-| Coverage proyek API (lines) | 87.4% (`jest --coverage`, 135 test lolos, ~20 dtk) | tidak boleh turun |
-| Coverage proyek web (lines) | 21.3% (`vitest run --coverage`, 28 test lolos, ~26 dtk) | tidak boleh turun |
-| Bundle web (main JS) | 284.2 kB (gzip 85.2 kB) — chunk admin terpisah (lazy, dimuat hanya di `#admin`) | tidak boleh tumbuh |
+| Coverage proyek API (lines) | 89.6% (`jest --coverage`, 181 test lolos, ~20 dtk) | tidak boleh turun |
+| Coverage proyek web (lines) | 57.9% (`vitest run --coverage`, 129 test lolos, ~23 dtk) | tidak boleh turun |
+| Bundle web (main JS) | 290.14 kB (gzip 86.68 kB) — chunk admin terpisah (lazy, dimuat hanya di `#admin`); **naik 2.1% dari baseline 284.2 kB, toleransi ratchet 0.5% terlampaui (temuan WARN dicatat)** | tidak boleh tumbuh |
 | Typecheck + lint | lolos semua paket | harus tetap lolos |
 | Floor scan (supresi/stub/skip) | bersih | harus tetap bersih |
-| LCP halaman utama | ~3900ms (median 3 run lighthouse mobile pada preview 4173; FCP ~1400ms, TBT ~450ms, CLS 0) | turun ke ≤ 2500ms |
+| LCP halaman utama | ~4045ms (median 3 run lighthouse mobile pada preview 4173; FCP ~1459ms, TBT ~861ms, CLS 0) | turun ke ≤ 2500ms |
 | A11y halaman utama | 0 temuan critical/serious (skor 100, 3 run) | nol critical/serious |
 
 Catatan LCP: baseline lama 2782ms diukur pada situs 1-endpoint `GET /v1/content`
 yang merender 19 modul. Setelah migrasi blok, halaman mengambil 3 endpoint
 (settings/nav/page) dan merender 28 blok termasuk gambar hero eksternal, sehingga
 LCP naik. Target ≤2500ms tetap berlaku; kandidat perbaikan berikutnya: gambar hero
-disajikan dari `MEDIA_DIR` (bukan CDN eksternal) dan/atau prerender rute utama.
+disajikan dari `MEDIA_DIR` (bukan CDN eksternal), mengurangi endpoint awal, dan/atau
+prerender rute utama.
+
+Temuan WARN terbuka (tidak ditutup sebagai pengecualian): kenaikan bundle main
+(+5.94 kB dari baseline), LCP di atas target, dan 14 temuan high `osv-scanner`
+(multer/deepmerge-ts/qs) yang menunggu keputusan owner.
 
 ## Temuan awal osv-scanner (warn, perbaikan terpisah — bukan pengecualian)
 
