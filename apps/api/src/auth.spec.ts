@@ -1,4 +1,4 @@
-import { JwtAuthGuard, RolesGuard, hashToken, newRefreshToken, safeUser } from "./auth";
+import { JwtAuthGuard, Roles, RolesGuard, hashToken, newRefreshToken, safeUser } from "./auth";
 import { UnauthorizedException, ForbiddenException } from "@nestjs/common";
 import type { Role } from "@tpb/contracts";
 
@@ -60,7 +60,7 @@ describe("RolesGuard", () => {
     const handler = () => {};
     if (roles) Reflect.defineMetadata("roles", roles, handler);
     const req: any = { user };
-    return { getHandler: () => handler, switchToHttp: () => ({ getRequest: () => req }) } as any;
+    return { getHandler: () => handler, getClass: () => class {}, switchToHttp: () => ({ getRequest: () => req }) } as any;
   };
 
   it("lolos jika endpoint tidak menuntut role", () => {
@@ -81,5 +81,24 @@ describe("RolesGuard", () => {
   it("menolak request tanpa user saat role dituntut", () => {
     const guard = new RolesGuard();
     expect(() => guard.canActivate(makeCtx(["ADMIN"], undefined))).toThrow(ForbiddenException);
+  });
+
+  it("Roles level kelas berlaku untuk seluruh handler", () => {
+    @Roles("ADMIN", "EDITOR")
+    class ControllerKelas {
+      handler() {}
+    }
+    const ctx = {
+      getHandler: () => ControllerKelas.prototype.handler,
+      getClass: () => ControllerKelas,
+      switchToHttp: () => ({ getRequest: () => ({ user: { role: "OPERATOR" } }) }),
+    } as any;
+    expect(() => new RolesGuard().canActivate(ctx)).toThrow(ForbiddenException);
+    const ctxAdmin = {
+      getHandler: () => ControllerKelas.prototype.handler,
+      getClass: () => ControllerKelas,
+      switchToHttp: () => ({ getRequest: () => ({ user: { role: "EDITOR" } }) }),
+    } as any;
+    expect(new RolesGuard().canActivate(ctxAdmin)).toBe(true);
   });
 });

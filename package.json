@@ -5,7 +5,7 @@
   "description": "TPB UNU Purwokerto \u2014 monorepo (web, api, contracts, migration tooling)",
   "packageManager": "pnpm@9.15.0",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "dev:web": "pnpm --filter @tpb/web dev",
@@ -25,6 +25,9 @@
     "migration:export": "pnpm --filter @tpb/supabase-migration export",
     "migration:import": "pnpm --filter @tpb/supabase-migration import",
     "migration:reconcile": "pnpm --filter @tpb/supabase-migration reconcile",
+    "content:migrate": "pnpm --filter @tpb/content-migration migrate",
+    "content:migrate:write": "pnpm --filter @tpb/content-migration write",
+    "content:migrate:reconcile": "pnpm --filter @tpb/content-migration reconcile",
     "lint": "eslint .",
     "audit:env": "pnpm --filter @tpb/env-audit check",
     "check:fast": "pnpm -r typecheck && pnpm lint",

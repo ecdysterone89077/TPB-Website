@@ -16,7 +16,7 @@ Monorepo untuk situs resmi Program Studi Teknik Pertanian & Biosistem UNU Purwok
 
 | Tool | Versi minimum | Keterangan |
 |---|---|---|
-| Node.js | ≥ 20 (rekomendasi 22) | Runtime JavaScript |
+| Node.js | ≥ 22.12 (rekomendasi 22 LTS) | Runtime JavaScript; `require(esm)` dibutuhkan oleh kontrak ESM |
 | pnpm | ≥ 9 | Jalankan `corepack enable` terlebih dahulu |
 | Docker | — | Untuk MySQL 8.0 lokal, atau gunakan MySQL sendiri |
 
@@ -258,6 +258,30 @@ Pastikan direktori `MEDIA_DIR`:
 6. **Pencarian** — tombol Cari di menu mencari keyword di seluruh konten situs dan berita.
 
 ---
+
+## Page Builder (fondasi — Fase 1)
+
+Model konten baru berbasis blok: tabel `pages`, `blocks`, `nav_items`, `site_settings`, `page_revisions`. Kontrak validasi di `packages/contracts` (`BlockSchema`: 12 blok generik + 28 preset bergaya situs lama; `PageInputSchema`, `NavigationInputSchema`, `SiteSettingsSchema`). Blok `html` (mode lanjutan) disanitasi allowlist di server (`apps/api/src/sanitize.ts`).
+
+| Endpoint | Akses | Keterangan |
+|---|---|---|
+| `GET /v1/pages`, `GET /v1/pages/:slug` | publik | hanya halaman terbit; yang disajikan adalah **snapshot saat terbit** — editan draft baru tayang setelah `publish` |
+| `GET /v1/nav`, `PUT /v1/nav` | publik / ADMIN+EDITOR | menu multi-level (maks 3 tingkat) |
+| `GET /v1/settings`, `PUT /v1/settings` | publik / ADMIN+EDITOR | brand, footer, link PMB |
+| `GET/POST/PUT/DELETE /v1/admin/pages[/:id]` | ADMIN+EDITOR | CRUD halaman |
+| `PUT /v1/admin/pages/:id/blocks` | ADMIN+EDITOR | simpan blok transaksional (id blok dipertahankan; id duplikat ditolak) |
+| `POST /v1/admin/pages/:id/publish` / `unpublish` | ADMIN+EDITOR | terbit (minimal 1 blok) + snapshot revisi |
+| `GET /v1/admin/pages/:id/revisions`, `POST /v1/admin/pages/:id/revisions/:revisionId/restore` | ADMIN+EDITOR | riwayat & pemulihan; restore mengarsipkan keadaan sekarang lalu kembali draft |
+
+Migrasi konten lama (dry-run default; idempoten + reconcile):
+
+```bash
+pnpm content:migrate            # pratinjau rencana blok
+pnpm content:migrate:write      # terapkan ke halaman "beranda"
+pnpm content:migrate:reconcile  # verifikasi blok/menu/settings vs sumber
+```
+
+Fase 2 akan memindahkan render publik ke blok, menjalankan migrasi pada database nyata, lalu menghapus tabel modul lama.
 
 ## Migrasi Data dari Supabase
 

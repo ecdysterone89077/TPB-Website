@@ -31,13 +31,17 @@ import { FooterController } from "./controllers/footer.controller";
 import { CtaController } from "./controllers/cta.controller";
 import { NewsController } from "./controllers/news.controller";
 import { PmbLinkController } from "./controllers/pmb-link.controller";
+import { PagesController } from "./controllers/pages.controller";
+import { AdminPagesController } from "./controllers/admin-pages.controller";
+import { NavController } from "./controllers/nav.controller";
+import { SettingsController } from "./controllers/settings.controller";
 
 const jwtSecret = config.jwtAccessSecret;
 const accessTtlSeconds = config.jwtAccessTtlSeconds;
 
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]), JwtModule.register({ secret: jwtSecret, signOptions: { expiresIn: accessTtlSeconds } })],
-  controllers: [AuthController, ContentController, PostsController, PmbController, PublicController, AdminController, BrandController, NavigationController, HeroController, MarqueeController, ContentStatsController, AboutController, ProgramsController, ResearchController, CommunityController, StudentLifeController, ProfilController, AkademikController, PenelitianController, PengabdianController, KemahasiswaanController, FooterController, CtaController, NewsController, PmbLinkController],
+  controllers: [AuthController, ContentController, PostsController, PmbController, PublicController, AdminController, BrandController, NavigationController, HeroController, MarqueeController, ContentStatsController, AboutController, ProgramsController, ResearchController, CommunityController, StudentLifeController, ProfilController, AkademikController, PenelitianController, PengabdianController, KemahasiswaanController, FooterController, CtaController, NewsController, PmbLinkController, PagesController, AdminPagesController, NavController, SettingsController],
   providers: [PrismaService, JwtAuthGuard, RolesGuard, { provide: APP_GUARD, useClass: ThrottlerGuard }, { provide: APP_INTERCEPTOR, useClass: AuditInterceptor }],
 })
 export class AppModule {}
