@@ -118,7 +118,9 @@ function SortableBlock({ block, index, total, expanded, hasError, onToggle, onMo
 }
 
 function Palette({ open, onClose, onAdd }: { open: boolean; onClose: () => void; onAdd: (type: BlockType) => void }) {
+  const [advanced, setAdvanced] = useState(false);
   if (!open) return null;
+  const groups = advanced ? GROUP_ORDER : GROUP_ORDER.filter((group) => group !== "Lanjutan");
   return (
     <div className="fixed inset-0 z-[105] grid place-items-center bg-slate-900/50 p-4" onClick={onClose}>
       <div className="max-h-[85vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-5" onClick={(event) => event.stopPropagation()}>
@@ -126,7 +128,7 @@ function Palette({ open, onClose, onAdd }: { open: boolean; onClose: () => void;
           <h3 className="text-lg font-bold text-slate-900">Tambah bagian baru</h3>
           <button onClick={onClose} className="button-secondary">Tutup</button>
         </div>
-        {GROUP_ORDER.map((group) => {
+        {groups.map((group) => {
           const entries = (Object.entries(BLOCK_SPECS) as [BlockType, (typeof BLOCK_SPECS)[BlockType]][]).filter(([, spec]) => spec.group === group);
           if (!entries.length) return null;
           return (
@@ -144,6 +146,10 @@ function Palette({ open, onClose, onAdd }: { open: boolean; onClose: () => void;
             </div>
           );
         })}
+        <label className="mt-6 flex items-center gap-2 text-xs text-slate-500">
+          <input type="checkbox" checked={advanced} onChange={(event) => setAdvanced(event.target.checked)} />
+          Tampilkan pilihan lanjutan (HTML kustom)
+        </label>
       </div>
     </div>
   );
@@ -325,7 +331,7 @@ export function PageBuilder({ user }: { user: AdminUser }) {
 
   const deletePage = async () => {
     if (!page) return;
-    if (!window.confirm(`Hapus halaman "${page.title}" beserta seluruh isinya?`)) return;
+    if (!window.confirm(`Hapus halaman "${page.title}" beserta seluruh isinya? Tindakan ini tidak bisa dibatalkan.`)) return;
     setBusy(true);
     try {
       await api.deletePage(page.id);
@@ -477,7 +483,7 @@ export function PageBuilder({ user }: { user: AdminUser }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-slate-900">Konten Halaman</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Isi Halaman</h1>
         <div className="flex flex-wrap gap-2">
           {user.role === "ADMIN" && (
             <>
@@ -502,6 +508,10 @@ export function PageBuilder({ user }: { user: AdminUser }) {
           ))}
         </div>
       )}
+
+      <p className="rounded-2xl bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+        Cara memakai: pilih halaman → klik <b>+ Tambah bagian</b> → isi kolomnya → <b>Simpan (belum tayang)</b> → bila sudah siap klik <b>Terbitkan perubahan</b>.
+      </p>
 
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {notice && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p>}
@@ -535,11 +545,17 @@ export function PageBuilder({ user }: { user: AdminUser }) {
               <span className={`rounded-full px-3 py-1 text-xs font-bold ${page.status === "published" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{page.status === "published" ? "Tayang di situs" : "Draf (belum tayang)"}</span>
               {dirty && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">Ada perubahan belum disimpan</span>}
             </div>
+            <p className="mt-2 text-xs text-slate-500">
+              {page.status === "published"
+                ? "Halaman ini tayang di situs. Setelah mengubah sesuatu, klik \"Terbitkan perubahan\" agar pengunjung melihatnya."
+                : "Halaman ini belum tayang. Klik \"Terbitkan\" setelah selesai mengisi."}
+              {dirty ? " Perubahan Anda belum tersimpan — klik \"Simpan (belum tayang)\" lebih dulu." : ""}
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setPalette(true)} className="button-primary">+ Tambah bagian</button>
-            <button onClick={save} disabled={busy} className="button-secondary disabled:opacity-50">{busy ? "Menyimpan…" : "Simpan draf"}</button>
+            <button onClick={save} disabled={busy} className="button-secondary disabled:opacity-50">{busy ? "Menyimpan…" : "Simpan (belum tayang)"}</button>
             {page.status === "published" ? (
               <>
                 <button onClick={publish} disabled={busy} className="bg-emerald-600 px-4 py-2 rounded-lg text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50">Terbitkan perubahan</button>
@@ -554,7 +570,7 @@ export function PageBuilder({ user }: { user: AdminUser }) {
 
           {blocks.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-              Halaman masih kosong. Klik <b>+ Tambah bagian</b> untuk menambahkan konten.
+              Halaman ini masih kosong. Klik tombol <b>+ Tambah bagian</b> di atas untuk menambahkan tulisan atau gambar pertama.
             </div>
           ) : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -571,7 +587,7 @@ export function PageBuilder({ user }: { user: AdminUser }) {
                       onToggle={() => setExpandedKey(expandedKey === blockKeyAt(block, index) ? null : blockKeyAt(block, index))}
                       onMove={(direction) => { setBlocks(arrayMove(blocks, index, index + direction)); setDirty(true); }}
                       onDuplicate={() => { const copy = BlockSchema.parse({ ...block, id: undefined }) as Block; setBlocks([...blocks.slice(0, index + 1), copy, ...blocks.slice(index + 1)]); setDirty(true); }}
-                      onRemove={() => { if (window.confirm(`Hapus bagian "${blockLabel(block.type)}"?`)) { setBlocks(blocks.filter((_, i) => i !== index)); setDirty(true); } }}
+                      onRemove={() => { if (window.confirm(`Hapus bagian "${blockLabel(block.type)}"? Tidak bisa dibatalkan.`)) { setBlocks(blocks.filter((_, i) => i !== index)); setDirty(true); } }}
                       onToggleVisible={() => updateBlock(index, { ...block, isVisible: !block.isVisible } as Block)}
                       onChange={(next) => updateBlock(index, next)}
                     />

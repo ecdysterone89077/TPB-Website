@@ -258,7 +258,7 @@ export function SettingsEditor() {
   if (!settings) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-slate-900">Pengaturan Situs</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Pengaturan Tampilan</h1>
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         <div className="rounded-2xl bg-white p-6 text-sm text-slate-600 shadow-sm">
           Pengaturan global (brand, kontak, menu) belum ada di database. Muat data dari halaman lama dengan <code>pnpm content:migrate:write</code> atau isi manual.
@@ -286,13 +286,17 @@ export function SettingsEditor() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-slate-900">Pengaturan Situs</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Pengaturan Tampilan</h1>
         <div className="flex flex-wrap items-center gap-2">
           {dirty && <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">Ada perubahan belum disimpan</span>}
           <button onClick={load} className="button-secondary">Muat ulang</button>
           <button onClick={save} disabled={busy} className="button-primary disabled:opacity-50">{busy ? "Menyimpan…" : "Simpan pengaturan"}</button>
         </div>
       </div>
+      <p className="rounded-2xl bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+        Semua yang tampil di situs diatur di sini: nama dan logo, menu, footer, serta teks sistem. Setelah mengubah, klik <b>Simpan pengaturan</b>.
+      </p>
+
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {notice && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p>}
 
