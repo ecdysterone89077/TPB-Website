@@ -29,16 +29,16 @@ type PostForm = {
 
 const PAGE_SIZE = 50;
 
-const NAV_ALL: { id: View; label: string; roles: Role[] }[] = [
-  { id: "dashboard", label: "Dashboard", roles: ["ADMIN"] },
-  { id: "content", label: "Konten Halaman", roles: ["ADMIN", "EDITOR"] },
-  { id: "settings", label: "Pengaturan Situs", roles: ["ADMIN", "EDITOR"] },
-  { id: "posts", label: "Berita", roles: ["ADMIN", "EDITOR"] },
-  { id: "pmb", label: "PMB", roles: ["ADMIN", "OPERATOR"] },
-  { id: "media", label: "Media", roles: ["ADMIN", "EDITOR", "OPERATOR"] },
-  { id: "subs", label: "Pelanggan", roles: ["ADMIN", "OPERATOR"] },
-  { id: "users", label: "Pengguna", roles: ["ADMIN"] },
-  { id: "audit", label: "Audit Log", roles: ["ADMIN"] },
+const NAV_ALL: { id: View; label: string; roles: Role[]; desc: string }[] = [
+  { id: "dashboard", label: "Beranda Panel", roles: ["ADMIN"], desc: "Ringkasan situs dan panduan cepat." },
+  { id: "content", label: "Isi Halaman", roles: ["ADMIN", "EDITOR"], desc: "Ubah tulisan, gambar, dan bagian di setiap halaman situs." },
+  { id: "posts", label: "Berita", roles: ["ADMIN", "EDITOR"], desc: "Tulis dan kelola berita yang tampil di situs." },
+  { id: "settings", label: "Pengaturan Tampilan", roles: ["ADMIN", "EDITOR"], desc: "Nama, logo, menu, footer, dan teks yang tampil di situs." },
+  { id: "media", label: "Media", roles: ["ADMIN", "EDITOR", "OPERATOR"], desc: "Unggah gambar atau dokumen, lalu salin tautannya." },
+  { id: "pmb", label: "Pendaftar", roles: ["ADMIN", "OPERATOR"], desc: "Lihat pendaftar PMB dan ubah statusnya." },
+  { id: "subs", label: "Langganan", roles: ["ADMIN", "OPERATOR"], desc: "Email pengunjung yang berlangganan buletin." },
+  { id: "users", label: "Pengguna", roles: ["ADMIN"], desc: "Atur akun admin dan petugas." },
+  { id: "audit", label: "Riwayat Aktivitas", roles: ["ADMIN"], desc: "Catatan siapa mengubah apa dan kapan." },
 ];
 
 const roleCan = (user: RoleAwareUser, roles: Role[]) => roles.includes(user.role);
@@ -77,7 +77,7 @@ export function AdminPage() {
     </aside>
     <main className="flex-1 min-w-0 p-4 md:p-10 overflow-x-auto">
       <div className="md:hidden mb-5 flex gap-2 overflow-x-auto pb-1">{nav.map((item) => <button key={item.id} onClick={() => setView(item.id)} className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm ${view === item.id ? "bg-slate-900 text-white" : "bg-white text-slate-600"}`}>{item.label}</button>)}</div>
-      {view === "dashboard" && <DashboardView />}
+      {view === "dashboard" && <DashboardView items={nav} onNavigate={setView} />}
       {view === "content" && <PageBuilder user={user} />}
       {view === "settings" && <SettingsEditor />}
       {view === "posts" && <PostsView user={user} />}
@@ -109,12 +109,29 @@ function PaginationControls({ pagination, onPageChange }: { pagination: Paginati
   </div>;
 }
 
-function DashboardView() {
+function DashboardView({ items, onNavigate }: { items: { id: View; label: string; desc: string }[]; onNavigate: (view: View) => void }) {
   const [summary, setSummary] = useState<DashboardSummary | null>(null); const [error, setError] = useState("");
   const load = useCallback(async () => { setError(""); try { setSummary(await api.dashboardSummary()); } catch (e: any) { setError(e?.message ?? "Gagal memuat dashboard."); } }, []);
   useEffect(() => { load(); }, [load]);
-  const cards: [string, number][] = summary ? [["Berita", summary.posts], ["Pendaftar Baru", summary.newPmb], ["Pelanggan", summary.subscribers], ["Media", summary.media]] : [];
-  return <Section title="Dashboard" action={<button onClick={load} className="button-secondary">Muat ulang</button>}><AsyncState loading={!summary && !error} error={error}>{summary && <><div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{cards.map(([label, value]) => <Panel key={label}><p className="text-3xl font-bold text-slate-900">{value}</p><p className="text-sm text-slate-500">{label}</p></Panel>)}</div><Panel><h2 className="font-semibold mb-3 text-slate-900">Aktivitas Terakhir</h2><AuditList entries={summary.audit} /></Panel></>}</AsyncState></Section>;
+  const cards: [string, number][] = summary ? [["Berita", summary.posts], ["Pendaftar Baru", summary.newPmb], ["Langganan", summary.subscribers], ["Media", summary.media]] : [];
+  const guides = items.filter((item) => item.id !== "dashboard");
+  return <Section title="Beranda Panel" action={<button onClick={load} className="button-secondary">Muat ulang</button>}>
+    <Panel>
+      <h2 className="font-semibold text-slate-900">Mau melakukan apa hari ini?</h2>
+      <p className="mt-1 text-sm text-slate-500">Klik salah satu tombol di bawah — Anda akan langsung dibawa ke tempatnya.</p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {guides.map((item, index) => (
+          <div key={item.id} className="rounded-xl border border-slate-200 p-4">
+            <span className="font-mono text-xs font-bold text-slate-400">Langkah {index + 1}</span>
+            <p className="mt-1 font-semibold text-slate-800">{item.label}</p>
+            <p className="mt-1 text-xs text-slate-500">{item.desc}</p>
+            <button onClick={() => onNavigate(item.id)} className="button-primary mt-3">Buka {item.label}</button>
+          </div>
+        ))}
+      </div>
+    </Panel>
+    <AsyncState loading={!summary && !error} error={error}>{summary && <><div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{cards.map(([label, value]) => <Panel key={label}><p className="text-3xl font-bold text-slate-900">{value}</p><p className="text-sm text-slate-500">{label}</p></Panel>)}</div><Panel><h2 className="font-semibold mb-3 text-slate-900">Aktivitas Terakhir</h2><AuditList entries={summary.audit} /></Panel></>}</AsyncState>
+  </Section>;
 }
 
 
@@ -163,7 +180,7 @@ function MediaView() {
   };
 
   const remove = async (item: MediaAsset) => {
-    if (!window.confirm("Hapus media ini?")) return;
+    if (!window.confirm("Hapus media ini? File akan dihapus dari server dan tidak bisa dikembalikan.")) return;
     try {
       await api.removeMedia(item.id);
       await load(offset);
@@ -214,7 +231,7 @@ function PostsView({ user }: { user: RoleAwareUser }) {
   useEffect(() => { load(); }, [load]);
   const setField = (key: keyof PostForm) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm((current) => ({ ...current, [key]: event.target.value }));
   const submit = async (event: FormEvent) => { event.preventDefault(); setBusy(true); setError(""); setNotice(""); try { const input = { ...form, content: form.content || null, image: form.image || null, date: form.date ? new Date(form.date).toISOString() : undefined }; if (editing) await api.update(editing, input); else await api.create(input); setForm(emptyPost()); setEditing(null); setNotice("Berita tersimpan."); await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal menyimpan berita."); } finally { setBusy(false); } };
-  const remove = async (id: string) => { if (!window.confirm("Hapus berita ini?")) return; setError(""); try { await api.remove(id); if (editing === id) { setEditing(null); setForm(emptyPost()); } await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal menghapus berita."); } };
+  const remove = async (id: string) => { if (!window.confirm("Hapus berita ini? Tidak bisa dibatalkan.")) return; setError(""); try { await api.remove(id); if (editing === id) { setEditing(null); setForm(emptyPost()); } await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal menghapus berita."); } };
   return <Section title="Berita" action={<button onClick={() => load(offset)} className="button-secondary">Muat ulang</button>}><Notice error={error} success={notice} />{roleCan(user, ["ADMIN", "EDITOR"]) && <Panel><h2 className="font-semibold mb-4">{editing ? "Edit berita" : "Berita baru"}</h2><form onSubmit={submit} className="grid md:grid-cols-2 gap-3"><input required className="admin-input" placeholder="Judul" value={form.title} onChange={setField("title")} /><input required className="admin-input" placeholder="Kategori" value={form.category} onChange={setField("category")} /><input className="admin-input" placeholder="Waktu baca" value={form.readTime} onChange={setField("readTime")} /><input type="datetime-local" className="admin-input" value={form.date} onChange={setField("date")} /><input type="text" className="admin-input md:col-span-2" placeholder="URL gambar atau /media/... (opsional)" value={form.image} onChange={setField("image")} /><textarea className="admin-textarea md:col-span-2" placeholder="Ringkasan" rows={3} value={form.excerpt} onChange={setField("excerpt")} /><textarea className="admin-textarea md:col-span-2" placeholder="Isi berita" rows={8} value={form.content} onChange={setField("content")} /><select className="admin-input" value={form.status} onChange={setField("status")}><option value="draft">Draft</option><option value="published">Terbit</option></select><div className="flex gap-2 items-center"><button disabled={busy} className="button-primary disabled:opacity-50">{busy ? "Menyimpan..." : "Simpan"}</button>{editing && <button type="button" onClick={() => { setEditing(null); setForm(emptyPost()); }} className="button-secondary">Batal</button>}</div></form></Panel>}<Panel><AsyncState loading={loading} error={error} empty={!posts.length && !pagination}>{posts.length > 0 && <div className="divide-y divide-slate-100">{posts.map((post) => <div key={post.id} className="py-3 flex flex-wrap justify-between gap-3"><div><p className="font-semibold text-slate-900">{post.title}</p><p className="text-xs text-slate-500">{post.category} - {post.status} - {formatDate(post.date)}</p></div><div className="flex gap-2"><button onClick={() => { setEditing(post.id); setForm(postToForm(post)); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="button-secondary">Edit</button>{roleCan(user, ["ADMIN"]) && <button onClick={() => remove(post.id)} className="button-danger">Hapus</button>}</div></div>)}</div>}{pagination && <PaginationControls pagination={pagination} onPageChange={(off) => load(off)} />}</AsyncState></Panel></Section>;
 }
 
@@ -224,8 +241,8 @@ function PmbView({ user }: { user: RoleAwareUser }) {
   const load = useCallback(async (off = 0) => { setLoading(true); setError(""); try { const r = await api.listPmb({ limit: PAGE_SIZE, offset: off }); setRows(r.registrations); setPagination(r.pagination); setOffset(off); } catch (e: any) { setError(e?.message ?? "Gagal memuat pendaftar."); } finally { setLoading(false); } }, []);
   useEffect(() => { load(); }, [load]);
   const updateStatus = async (row: Registration, status: Registration["status"]) => { try { await api.setPmbStatus(row.id, status); await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal mengubah status."); } };
-  const remove = async (id: string) => { if (!window.confirm("Hapus pendaftar ini?")) return; try { await api.removePmb(id); await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal menghapus pendaftar."); } };
-  return <Section title="PMB" action={<button onClick={() => load(offset)} className="button-secondary">Muat ulang</button>}><Notice error={error} /><Panel><AsyncState loading={loading} error={error} empty={!rows.length && !pagination}>{rows.length > 0 && <div className="space-y-3">{rows.map((row) => <div key={row.id} className="border border-slate-200 rounded-lg p-4"><div className="flex flex-wrap justify-between gap-3"><div><p className="font-semibold text-slate-900">{row.name}</p><p className="text-sm text-slate-600">{row.email} - {row.phone}</p><p className="text-xs text-slate-500">{row.school || "-"} - {row.program || "-"} - {formatDate(row.createdAt)}</p>{row.message && <p className="mt-2 text-sm text-slate-600">{row.message}</p>}</div><div className="flex items-start gap-2"><select value={row.status} onChange={(e) => updateStatus(row, e.target.value as Registration["status"])} className="admin-input"><option value="baru">Baru</option><option value="diproses">Diproses</option><option value="diterima">Diterima</option><option value="ditolak">Ditolak</option></select>{roleCan(user, ["ADMIN"]) && <button onClick={() => remove(row.id)} className="button-danger">Hapus</button>}</div></div></div>)}</div>}{pagination && <PaginationControls pagination={pagination} onPageChange={(off) => load(off)} />}</AsyncState></Panel></Section>;
+  const remove = async (id: string) => { if (!window.confirm("Hapus pendaftar ini? Tidak bisa dibatalkan.")) return; try { await api.removePmb(id); await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal menghapus pendaftar."); } };
+  return <Section title="Pendaftar PMB" action={<button onClick={() => load(offset)} className="button-secondary">Muat ulang</button>}><Notice error={error} /><Panel><AsyncState loading={loading} error={error} empty={!rows.length && !pagination}>{rows.length > 0 && <div className="space-y-3">{rows.map((row) => <div key={row.id} className="border border-slate-200 rounded-lg p-4"><div className="flex flex-wrap justify-between gap-3"><div><p className="font-semibold text-slate-900">{row.name}</p><p className="text-sm text-slate-600">{row.email} - {row.phone}</p><p className="text-xs text-slate-500">{row.school || "-"} - {row.program || "-"} - {formatDate(row.createdAt)}</p>{row.message && <p className="mt-2 text-sm text-slate-600">{row.message}</p>}</div><div className="flex items-start gap-2"><select value={row.status} onChange={(e) => updateStatus(row, e.target.value as Registration["status"])} className="admin-input"><option value="baru">Baru</option><option value="diproses">Diproses</option><option value="diterima">Diterima</option><option value="ditolak">Ditolak</option></select>{roleCan(user, ["ADMIN"]) && <button onClick={() => remove(row.id)} className="button-danger">Hapus</button>}</div></div></div>)}</div>}{pagination && <PaginationControls pagination={pagination} onPageChange={(off) => load(off)} />}</AsyncState></Panel></Section>;
 }
 
 function SubscribersView() {
@@ -233,7 +250,7 @@ function SubscribersView() {
   const [pagination, setPagination] = useState<PaginationMeta | null>(null); const [offset, setOffset] = useState(0);
   const load = useCallback(async (off = 0) => { setLoading(true); setError(""); try { const r = await api.listSubscribers({ limit: PAGE_SIZE, offset: off }); setRows(r.subscribers); setPagination(r.pagination); setOffset(off); } catch (e: any) { setError(e?.message ?? "Gagal memuat pelanggan."); } finally { setLoading(false); } }, []);
   useEffect(() => { load(); }, [load]);
-  return <Section title="Pelanggan" action={<button onClick={() => load(offset)} className="button-secondary">Muat ulang</button>}><Panel><AsyncState loading={loading} error={error} empty={!rows.length && !pagination}>{rows.length > 0 && <div className="divide-y divide-slate-100">{rows.map((row) => <div key={row.id} className="py-3 flex justify-between gap-3 text-sm"><span>{row.email}</span><span className="text-slate-500">{formatDate(row.subscribedAt)}</span></div>)}</div>}{pagination && <PaginationControls pagination={pagination} onPageChange={(off) => load(off)} />}</AsyncState></Panel></Section>;
+  return <Section title="Langganan Email" action={<button onClick={() => load(offset)} className="button-secondary">Muat ulang</button>}><Panel><AsyncState loading={loading} error={error} empty={!rows.length && !pagination}>{rows.length > 0 && <div className="divide-y divide-slate-100">{rows.map((row) => <div key={row.id} className="py-3 flex justify-between gap-3 text-sm"><span>{row.email}</span><span className="text-slate-500">{formatDate(row.subscribedAt)}</span></div>)}</div>}{pagination && <PaginationControls pagination={pagination} onPageChange={(off) => load(off)} />}</AsyncState></Panel></Section>;
 }
 
 function UsersView({ user }: { user: RoleAwareUser }) {
@@ -243,7 +260,7 @@ function UsersView({ user }: { user: RoleAwareUser }) {
   useEffect(() => { if (roleCan(user, ["ADMIN"])) load(); else setLoading(false); }, [load, user]);
   const submit = async (event: FormEvent) => { event.preventDefault(); setBusy(true); setError(""); setNotice(""); try { if (editing) await api.updateUser(editing, { name: form.name, role: form.role, ...(form.password ? { password: form.password } : {}) }); else await api.createUser(form); setForm({ name: "", email: "", password: "", role: "OPERATOR" }); setEditing(null); setNotice("Pengguna tersimpan."); await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal menyimpan pengguna."); } finally { setBusy(false); } };
   const toggle = async (row: AdminUser) => { try { await api.updateUser(row.id, { isActive: !row.isActive }); await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal mengubah status pengguna."); } };
-  const remove = async (id: string) => { if (id === user.id || !window.confirm("Hapus pengguna ini?")) return; try { await api.deleteUser(id); await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal menghapus pengguna."); } };
+  const remove = async (id: string) => { if (id === user.id || !window.confirm("Hapus pengguna ini? Tidak bisa dibatalkan.")) return; try { await api.deleteUser(id); await load(offset); } catch (e: any) { setError(e?.message ?? "Gagal menghapus pengguna."); } };
   if (!roleCan(user, ["ADMIN"])) return <Section title="Pengguna"><Panel><p className="text-sm text-slate-500">Hanya ADMIN yang dapat mengelola pengguna.</p></Panel></Section>;
   return <Section title="Pengguna" action={<button onClick={() => load(offset)} className="button-secondary">Muat ulang</button>}><Notice error={error} success={notice} /><Panel><h2 className="font-semibold mb-4">{editing ? "Edit pengguna" : "Pengguna baru"}</h2><form onSubmit={submit} className="grid md:grid-cols-2 gap-3"><input required className="admin-input" placeholder="Nama" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />{!editing && <input required type="email" className="admin-input" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />}<input required={!editing} type="password" minLength={10} className="admin-input" placeholder={editing ? "Kata sandi baru (opsional)" : "Kata sandi"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /><select className="admin-input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}><option value="ADMIN">ADMIN</option><option value="EDITOR">EDITOR</option><option value="OPERATOR">OPERATOR</option></select><div className="flex gap-2"><button disabled={busy} className="button-primary disabled:opacity-50">Simpan</button>{editing && <button type="button" onClick={() => { setEditing(null); setForm({ name: "", email: "", password: "", role: "OPERATOR" }); }} className="button-secondary">Batal</button>}</div></form></Panel><Panel><AsyncState loading={loading} error={error} empty={!rows.length && !pagination}>{rows.length > 0 && <div className="divide-y divide-slate-100">{rows.map((row) => <div key={row.id} className="py-3 flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold">{row.name || row.email}</p><p className="text-xs text-slate-500">{row.email} - {row.role} - {row.isActive ? "Aktif" : "Nonaktif"}</p></div><div className="flex gap-2"><button onClick={() => { setEditing(row.id); setForm({ name: row.name || "", email: row.email, password: "", role: row.role }); }} className="button-secondary">Edit</button>{row.id !== user.id && <><button onClick={() => toggle(row)} className="button-secondary">{row.isActive ? "Nonaktifkan" : "Aktifkan"}</button><button onClick={() => remove(row.id)} className="button-danger">Hapus</button></>}</div></div>)}</div>}{pagination && <PaginationControls pagination={pagination} onPageChange={(off) => load(off)} />}</AsyncState></Panel></Section>;
 }
@@ -253,7 +270,7 @@ function AuditView() {
   const [pagination, setPagination] = useState<PaginationMeta | null>(null); const [offset, setOffset] = useState(0);
   const load = useCallback(async (off = 0) => { setLoading(true); setError(""); try { const r = await api.listAudit({ limit: PAGE_SIZE, offset: off }); setEntries(r.audit); setPagination(r.pagination); setOffset(off); } catch (e: any) { setError(e?.message ?? "Gagal memuat audit log."); } finally { setLoading(false); } }, []);
   useEffect(() => { load(); }, [load]);
-  return <Section title="Audit Log" action={<button onClick={() => load(offset)} className="button-secondary">Muat ulang</button>}><Panel><AsyncState loading={loading} error={error} empty={!entries.length && !pagination}><AuditList entries={entries} detailed />{pagination && <PaginationControls pagination={pagination} onPageChange={(off) => load(off)} />}</AsyncState></Panel></Section>;
+  return <Section title="Riwayat Aktivitas" action={<button onClick={() => load(offset)} className="button-secondary">Muat ulang</button>}><Panel><AsyncState loading={loading} error={error} empty={!entries.length && !pagination}><AuditList entries={entries} detailed />{pagination && <PaginationControls pagination={pagination} onPageChange={(off) => load(off)} />}</AsyncState></Panel></Section>;
 }
 
 function AuditList({ entries, detailed = false }: { entries: AuditEntry[]; detailed?: boolean }) { if (!entries.length) return <p className="text-sm text-slate-500">Belum ada aktivitas.</p>; return <div className="divide-y divide-slate-100">{entries.map((entry) => <div key={entry.id} className="py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><span className="font-medium text-slate-800">{entry.action} - {entry.entity}</span><span className="text-xs text-slate-500">{formatDate(entry.createdAt)}</span></div>{detailed && <p className="text-xs text-slate-500 mt-1">{entry.user?.email || "Sistem"} - {entry.entityId || "-"} - {entry.ip || "-"}</p>}{detailed && entry.metadata && <pre className="mt-2 overflow-auto rounded bg-slate-50 p-2 text-xs text-slate-600">{JSON.stringify(entry.metadata, null, 2)}</pre>}</div>)}</div>; }

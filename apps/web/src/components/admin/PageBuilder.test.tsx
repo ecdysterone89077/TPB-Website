@@ -177,6 +177,23 @@ describe("PageBuilder — bundel konten", () => {
     expect(api.importContent).not.toHaveBeenCalled();
   });
 
+  it("menampilkan panduan langkah di atas editor", async () => {
+    render(<PageBuilder user={admin} />);
+
+    expect(await screen.findByText(/Cara memakai:/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Simpan (belum tayang)" })).toBeTruthy();
+  });
+
+  it("menyembunyikan pilihan lanjutan sampai diminta", async () => {
+    render(<PageBuilder user={admin} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "+ Tambah bagian" }));
+    expect(screen.queryByText("HTML kustom (lanjutan)")).toBeNull();
+
+    fireEvent.click(screen.getByLabelText(/Tampilkan pilihan lanjutan/));
+    expect(await screen.findByText("HTML kustom (lanjutan)")).toBeTruthy();
+  });
+
   it("halaman terbit tetap bisa menerbitkan perubahan draf", async () => {
     api.publishPage.mockResolvedValue({ id: "p1", slug: "beranda", title: "Beranda", status: "published", publishedAt: null, updatedAt: "" });
     render(<PageBuilder user={admin} />);
