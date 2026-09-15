@@ -13,7 +13,7 @@ function handleInternal(href: string) {
   return false;
 }
 
-export function Header({ brand, navigation, blocks, onAdmin }: { brand: SiteContent["brand"]; navigation: NavItemInput[]; blocks: Block[]; onAdmin: () => void }) {
+export function Header({ brand, navigation, blocks, slug, onAdmin }: { brand: SiteContent["brand"]; navigation: NavItemInput[]; blocks: Block[]; slug: string; onAdmin: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [mobile, setMobile] = useState(false);
@@ -43,18 +43,21 @@ export function Header({ brand, navigation, blocks, onAdmin }: { brand: SiteCont
                 {item.children?.length && open === item.label ? (
                   <div className="absolute left-1/2 top-full mt-2 w-56 -translate-x-1/2 rounded-2xl border border-midnight/10 bg-white p-2 shadow-xl">
                     {item.children.map((child) => (
-                      <a key={`${child.label}-${child.href}`} href={child.href} onClick={(event) => { if (handleInternal(child.href)) event.preventDefault(); }} className="block rounded-xl px-3 py-2 text-sm text-midnight/70 hover:bg-cream hover:text-midnight">{child.label}</a>
+                      <div key={`${child.label}-${child.href}`}>
+                        <a href={child.href} target={child.openInNewTab ? "_blank" : undefined} rel={child.openInNewTab ? "noopener noreferrer" : undefined} onClick={(event) => { if (handleInternal(child.href)) event.preventDefault(); }} className="block rounded-xl px-3 py-2 text-sm text-midnight/70 hover:bg-cream hover:text-midnight">{child.label}</a>
+                        {child.children?.length ? <div className="ml-3 border-l border-midnight/10 pl-2">{child.children.map((grand) => <a key={`${grand.label}-${grand.href}`} href={grand.href} target={grand.openInNewTab ? "_blank" : undefined} rel={grand.openInNewTab ? "noopener noreferrer" : undefined} onClick={(event) => { if (handleInternal(grand.href)) event.preventDefault(); }} className="block rounded-lg px-3 py-1.5 text-xs text-midnight/55 hover:bg-cream hover:text-midnight">{grand.label}</a>)}</div> : null}
+                      </div>
                     ))}
                   </div>
                 ) : null}
               </div>
             ))}
-            <SearchButton blocks={blocks} navigation={navigation} />
+            <SearchButton blocks={blocks} navigation={navigation} slug={slug} />
             <button onClick={onAdmin} className="rounded-full bg-midnight px-4 py-2.5 text-[12px] font-bold text-white transition hover:bg-midnight-700">Admin</button>
           </nav>
 
           <div className="ml-auto flex items-center gap-2 xl:hidden">
-            <SearchButton blocks={blocks} navigation={navigation} compact />
+            <SearchButton blocks={blocks} navigation={navigation} slug={slug} compact />
             <button onClick={() => setMobile((v) => !v)} aria-label="Menu" aria-expanded={mobile} className="rounded-full border border-midnight/15 px-4 py-2 text-xs font-bold">☰</button>
           </div>
         </div>
@@ -78,7 +81,7 @@ export function Header({ brand, navigation, blocks, onAdmin }: { brand: SiteCont
 }
 
 export function Hero({ hero, onDaftar }: { hero: SiteContent["hero"]; onDaftar: () => void }) {
-  return <section id="top" className="relative min-h-screen overflow-hidden bg-midnight"><div className="absolute inset-0"><DriveImage src={hero.image} alt="" className="h-full w-full object-cover opacity-45" /><div className="absolute inset-0 bg-gradient-to-r from-midnight via-midnight/80 to-midnight/20" /></div><div className="relative mx-auto flex min-h-screen max-w-[1360px] items-center px-5 pb-20 pt-32 lg:px-10"><div className="max-w-3xl text-white"><span className="reveal inline-flex rounded-full border border-gold/50 bg-gold/10 px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-gold">{hero.badge}</span><h1 className="reveal mt-7 font-display text-5xl font-extrabold leading-[0.95] lg:text-8xl">{hero.line1}<br /><span className="text-gold">{hero.highlight}</span><br />{hero.line2}</h1><p className="reveal mt-7 max-w-xl text-base leading-relaxed text-white/75 lg:text-lg">{hero.subtitle}</p><div className="reveal mt-9 flex flex-wrap gap-3"><button onClick={onDaftar} className="rounded-full bg-gold px-7 py-3.5 text-sm font-extrabold text-midnight transition hover:-translate-y-0.5">{hero.primaryLabel}</button><a href={hero.primaryHref} className="rounded-full border border-white/30 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">{hero.secondaryLabel}</a></div></div></div></section>;
+  return <section id="top" className="relative min-h-screen overflow-hidden bg-midnight"><div className="absolute inset-0"><DriveImage src={hero.image} alt="" className="h-full w-full object-cover opacity-45" /><div className="absolute inset-0 bg-gradient-to-r from-midnight via-midnight/80 to-midnight/20" /></div><div className="relative mx-auto flex min-h-screen max-w-[1360px] items-center px-5 pb-20 pt-32 lg:px-10"><div className="max-w-3xl text-white"><span className="reveal inline-flex rounded-full border border-gold/50 bg-gold/10 px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-gold">{hero.badge}</span><h1 className="reveal mt-7 font-display text-5xl font-extrabold leading-[0.95] lg:text-8xl">{hero.line1}<br /><span className="text-gold">{hero.highlight}</span><br />{hero.line2}</h1><p className="reveal mt-7 max-w-xl text-base leading-relaxed text-white/75 lg:text-lg">{hero.subtitle}</p><div className="reveal mt-9 flex flex-wrap gap-3"><button onClick={onDaftar} className="rounded-full bg-gold px-7 py-3.5 text-sm font-extrabold text-midnight transition hover:-translate-y-0.5">{hero.primaryLabel}</button>{hero.secondaryLabel && <a href={hero.secondaryHref || hero.primaryHref || "#top"} className="rounded-full border border-white/30 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">{hero.secondaryLabel}</a>}</div></div></div></section>;
 }
 
 export function Marquee({ items }: { items: string[] }) { return <div className="overflow-hidden bg-gold py-3 text-midnight"><div className="marquee-track flex min-w-max gap-8 font-mono text-xs font-bold uppercase tracking-[0.2em]">{[...items, ...items].map((item, index) => <span key={`${item}-${index}`} className="flex items-center gap-8">{item}<span>✦</span></span>)}</div></div>; }

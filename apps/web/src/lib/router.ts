@@ -5,7 +5,11 @@ export const HOME_SLUG = "beranda";
 export function slugFromPath(pathname: string): string {
   const clean = pathname.replace(/\/+$/, "");
   if (!clean) return HOME_SLUG;
-  return decodeURIComponent(clean.replace(/^\//, ""));
+  try {
+    return decodeURIComponent(clean.replace(/^\//, ""));
+  } catch {
+    return "__tidak-valid__";
+  }
 }
 
 export function hrefForPage(slug: string): string {

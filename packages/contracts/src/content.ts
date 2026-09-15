@@ -183,8 +183,15 @@ export const StatsSchema = z.object({
 
 const UrlOrPath = z.string().trim().min(1).max(2000);
 const ImageSchema = z.union([UrlOrPath, z.literal(""), z.null()]);
-const NavChildSchema = z.object({ label: z.string().trim().min(1).max(160), href: z.string().trim().min(1).max(2000) });
-const NavItemSchema = z.object({ label: z.string().trim().min(1).max(160), href: z.string().trim().min(1).max(2000), children: z.array(NavChildSchema).max(30).optional() });
+
+const HTTP_URL = /^https?:\/\/[^\s/]+/i;
+/** Tautan aman: http(s) berhost, path absolut, anchor #, mailto:, atau tel:. */
+export const isSafeHref = (v: string) =>
+  !/\s/.test(v) && (HTTP_URL.test(v) || (v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\")) || v.startsWith("#") || /^(mailto|tel):[^\s]+/i.test(v));
+const SafeHrefSchema = z.string().trim().min(1).max(2000).refine(isSafeHref, { message: "Tautan harus http(s), path absolut, anchor #, mailto:, atau tel:." });
+const SafeHrefOrEmptySchema = SafeHrefSchema.or(z.literal(""));
+const NavChildSchema = z.object({ label: z.string().trim().min(1).max(160), href: SafeHrefSchema });
+const NavItemSchema = z.object({ label: z.string().trim().min(1).max(160), href: SafeHrefSchema, children: z.array(NavChildSchema).max(30).optional() });
 const KickerTitleSchema = z.object({ kicker: z.string().max(300), title: z.string().max(500) });
 const TextListSchema = z.array(z.string().max(500)).max(100);
 const MetricSchema = z.object({ v: z.string().max(100), l: z.string().max(200) });
@@ -192,8 +199,8 @@ const MetricSchema = z.object({ v: z.string().max(100), l: z.string().max(200) }
 export const SiteContentSchema = z.object({
   navigation: z.array(NavItemSchema).max(30),
   brand: z.object({ kicker: z.string().max(160), name: z.string().max(220), org: z.string().max(220), logoUrl: ImageSchema }),
-  pmbLink: z.string().max(2000),
-  hero: z.object({ badge: z.string().max(300), line1: z.string().max(300), highlight: z.string().max(300), line2: z.string().max(300), subtitle: z.string().max(2000), primaryLabel: z.string().max(160), primaryHref: z.string().max(2000), secondaryLabel: z.string().max(160), image: ImageSchema }),
+  pmbLink: z.string().max(2000).refine((v) => v.trim() === "" || isSafeHref(v.trim()), { message: "Tautan PMB tidak aman." }),
+  hero: z.object({ badge: z.string().max(300), line1: z.string().max(300), highlight: z.string().max(300), line2: z.string().max(300), subtitle: z.string().max(2000), primaryLabel: z.string().max(160), primaryHref: SafeHrefOrEmptySchema, secondaryLabel: z.string().max(160), secondaryHref: SafeHrefOrEmptySchema.optional(), image: ImageSchema }),
   marquee: TextListSchema,
   stats: z.array(z.object({ value: z.number().int().min(0).max(1000000000), suffix: z.string().max(20), label: z.string().max(160) })).max(100),
   about: z.object({ kicker: z.string().max(300), title: z.string().max(500), body: z.string().max(5000), sinceYear: z.string().max(20), sinceNote: z.string().max(500), image: ImageSchema, points: TextListSchema }),
@@ -207,8 +214,8 @@ export const SiteContentSchema = z.object({
   pengabdian: z.object({ programDesa: z.object({ kicker: z.string().max(300), title: z.string().max(500), desa: z.array(z.object({ name: z.string().max(300), body: z.string().max(3000) })).max(100) }), kemitraan: z.object({ kicker: z.string().max(300), title: z.string().max(500), mitra: TextListSchema }), kegiatan: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: z.array(z.object({ t: z.string().max(100), d: z.string().max(3000) })).max(100) }) }),
   kemahasiswaan: z.object({ himpunan: z.object({ kicker: z.string().max(300), title: z.string().max(500), intro: z.string().max(5000), divisi: TextListSchema }), beasiswa: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: z.array(z.object({ name: z.string().max(300), body: z.string().max(3000) })).max(100) }), prestasi: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: TextListSchema }), alumni: z.object({ kicker: z.string().max(300), title: z.string().max(500), quote: z.string().max(5000), name: z.string().max(200), role: z.string().max(200), stats: z.array(MetricSchema).max(50) }) }),
   news: KickerTitleSchema,
-  cta: z.object({ title: z.string().max(500), body: z.string().max(3000), primary: z.string().max(160), secondary: z.string().max(160), secondaryHref: z.string().max(2000) }),
-  footer: z.object({ newsletterTitle: z.string().max(500), infoTitle: z.string().max(200), quickLinksTitle: z.string().max(200), galleryTitle: z.string().max(200), submitLabel: z.string().max(80), socials: z.object({ facebook: z.string().max(2000), twitter: z.string().max(2000), youtube: z.string().max(2000), linkedin: z.string().max(2000) }), contact: z.object({ phone: z.string().max(100), phoneHref: z.string().max(2000).optional(), email: z.string().max(320), address: z.string().max(1000) }), quickLinks: z.array(z.object({ label: z.string().max(200), href: z.string().max(2000) })).max(100), copyright: z.string().max(500), tagline: z.string().max(500) }),
+  cta: z.object({ title: z.string().max(500), body: z.string().max(3000), primary: z.string().max(160), secondary: z.string().max(160), secondaryHref: SafeHrefOrEmptySchema }),
+  footer: z.object({ newsletterTitle: z.string().max(500), infoTitle: z.string().max(200), quickLinksTitle: z.string().max(200), galleryTitle: z.string().max(200), submitLabel: z.string().max(80), socials: z.object({ facebook: SafeHrefOrEmptySchema, twitter: SafeHrefOrEmptySchema, youtube: SafeHrefOrEmptySchema, linkedin: SafeHrefOrEmptySchema }), contact: z.object({ phone: z.string().max(100), phoneHref: SafeHrefOrEmptySchema.optional(), email: z.string().max(320), address: z.string().max(1000) }), quickLinks: z.array(z.object({ label: z.string().max(200), href: SafeHrefOrEmptySchema })).max(100), copyright: z.string().max(500), tagline: z.string().max(500) }),
 });
 export type ValidatedSiteContent = z.infer<typeof SiteContentSchema>;
 

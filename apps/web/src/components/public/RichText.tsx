@@ -23,8 +23,9 @@ function renderText(node: RichTextNode, key: string): ReactNode {
   return <Fragment key={key}>{element}</Fragment>;
 }
 
-function renderNode(node: RichTextNode, key: string): ReactNode {
-  const children = node.content?.map((child, index) => renderNode(child, `${key}-${index}`));
+function renderNode(node: RichTextNode, key: string, depth = 0): ReactNode {
+  if (depth > 12) return null;
+  const children = node.content?.map((child, index) => renderNode(child, `${key}-${index}`, depth + 1));
   switch (node.type) {
     case "paragraph":
       return <p key={key}>{children}</p>;

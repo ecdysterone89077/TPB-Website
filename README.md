@@ -125,8 +125,6 @@ git checkout --force develop
 git reset --hard origin/develop
 pnpm install --frozen-lockfile
 pnpm db:migrate:deploy
-pnpm content:migrate:write
-pnpm content:migrate:reconcile
 pnpm --filter @tpb/contracts build
 pnpm --filter @tpb/api build
 VITE_API_URL="https://staging-api.example.test/v1" pnpm --filter @tpb/web build
@@ -142,8 +140,6 @@ cd /path/to/repo
 git fetch --tags && git checkout <tag>
 pnpm install --frozen-lockfile
 pnpm db:migrate:deploy
-pnpm content:migrate:write
-pnpm content:migrate:reconcile
 pnpm --filter @tpb/contracts build
 pnpm --filter @tpb/api build
 VITE_API_URL="https://api.example.test/v1" pnpm --filter @tpb/web build
@@ -258,7 +254,7 @@ Pastikan direktori `MEDIA_DIR`:
 2. Login → dashboard: **Dashboard, Konten Halaman, Berita, PMB, Media, Pelanggan, Pengguna, Audit Log**. Menu Berita/PMB/Pelanggan/Media/Pengguna/Audit berfungsi penuh; menu **Konten Halaman** menampilkan informasi bahwa editor visual blok hadir pada fase berikutnya.
 3. **Struktur konten baru = halaman + blok** (lihat bagian Page Builder). Situs publik dirender sepenuhnya dari blok halaman terbit; tidak ada fallback/default content di kode (kebijakan: *tidak boleh ada data static inline / fallback / hardcode menempel di file code*).
 4. **Media** — unggah JPEG/PNG/GIF/WebP/PDF lalu salin URL-nya untuk dipakai pada blok gambar/video/galeri. Blok **galeri** menampilkan grid + popup lightbox (video YouTube/Instagram diputar di tempat); blok **video** mendukung mode popup.
-5. **Pencarian** — tombol Cari di menu mencari keyword di seluruh blok halaman dan berita.
+5. **Pencarian** — tombol Cari di menu mencari keyword pada blok halaman yang sedang dibuka dan berita.
 
 ---
 
@@ -287,7 +283,7 @@ pnpm content:migrate:reconcile  # verifikasi blok/menu/settings vs sumber
 pnpm content:drop-legacy -- --yes   # hapus tabel legacy (site_modules, site_content, site_stats, gallery_items)
 ```
 
-**Penting untuk produksi:** drop tabel lama **bukan** bagian dari `prisma migrate deploy` — jalankan urutan di atas secara manual setelah backup database, karena tabel harus dihapus *setelah* data dimigrasikan dan `reconcile` lulus. Skrip drop menolak berjalan bila halaman `beranda` belum punya blok.
+**Penting untuk produksi (hanya sekali, manual — bukan bagian script deploy):** setelah `pnpm db:migrate:deploy` pertama kali, jalankan urutan `content:migrate` → `content:migrate:write` → `content:migrate:reconcile` → `content:drop-legacy -- --yes` **setelah backup database**. Jangan menaruh langkah migrasi di webhook deploy: setelah tabel legacy di-drop, `content:migrate` otomatis no-op (aman), tetapi menjalankannya berulang sebelum drop akan menimpa editan konten dari panel.
 
 ## Migrasi Data dari Supabase
 

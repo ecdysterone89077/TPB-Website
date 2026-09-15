@@ -216,7 +216,7 @@ export function BlockRenderer({ block, onDaftar }: { block: Block; onDaftar: Daf
     case "beasiswa": return <BeasiswaSection data={block.data} anchor={block.anchor} />;
     case "prestasi": return <PrestasiSection data={block.data} anchor={block.anchor} />;
     case "alumni": return <AlumniSection data={block.data} anchor={block.anchor} />;
-    case "news": return <News news={block.data} />;
+    case "news": return <News news={block.data} anchor={block.anchor} />;
     case "cta": return <CTA cta={block.data} onDaftar={onDaftar} />;
     default: return null;
   }

@@ -14,6 +14,10 @@ describe("slugFromPath", () => {
     expect(slugFromPath("/akademik")).toBe("akademik");
   });
 
+  it("path rusak tidak membuat crash", () => {
+    expect(slugFromPath("/%E0%A4%A")).toBe("__tidak-valid__");
+  });
+
   it("href halaman mengikuti aturan beranda", () => {
     expect(hrefForPage(HOME_SLUG)).toBe("/");
     expect(hrefForPage("profil")).toBe("/profil");

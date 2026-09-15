@@ -104,11 +104,11 @@ function PublicApp() {
 
   return (
     <div className="min-h-full bg-cream font-sans text-midnight">
-      <Header brand={settings.brand} navigation={site.nav} blocks={page.blocks} onAdmin={() => { window.location.hash = "admin"; }} />
+      <Header brand={settings.brand} navigation={site.nav} blocks={page.blocks} slug={slug} onAdmin={() => { window.location.hash = "admin"; }} />
       <main>
-        {page.blocks.map((block) => <BlockRenderer key={block.id} block={block} onDaftar={onDaftar} />)}
+        {page.blocks.map((block, index) => <BlockRenderer key={block.id ?? `blok-${index}`} block={block} onDaftar={onDaftar} />)}
       </main>
-      <Footer footer={settings.footer} onDaftar={onDaftar} />
+      <Footer footer={settings.footer} />
       <BackToTop />
       {pmb && <Pmb onClose={() => setPmb(false)} programs={pmbPrograms} />}
     </div>

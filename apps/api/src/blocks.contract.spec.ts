@@ -1,7 +1,14 @@
-import { BlockSchema, BlocksSchema, PageInputSchema, NavigationInputSchema, RichTextSchema } from "@tpb/contracts";
+import { BlockSchema, BlocksSchema, CtaSchema, FooterSchema, HeroSchema, PageInputSchema, NavigationInputSchema, RichTextSchema, SiteContentSchema } from "@tpb/contracts";
 import { sanitizeBlock, sanitizeHtml } from "./sanitize";
 
 const heading = (text: string) => ({ type: "heading", data: { text, level: 2, align: "left" } });
+const heroFixture = { badge: "", line1: "a", highlight: "b", line2: "c", subtitle: "", primaryLabel: "Daftar", primaryHref: "#pmb", secondaryLabel: "", image: "" };
+const footerFixture = {
+  newsletterTitle: "", infoTitle: "", quickLinksTitle: "", galleryTitle: "", submitLabel: "",
+  socials: { facebook: "", twitter: "", youtube: "", linkedin: "" },
+  contact: { phone: "", email: "a@b.test", address: "" },
+  quickLinks: [], copyright: "", tagline: "",
+};
 
 describe("BlockSchema", () => {
   it("menerima blok generik dan preset, mengisi default", () => {
@@ -63,6 +70,16 @@ describe("validasi tautan blok", () => {
     expect(BlockSchema.safeParse({ type: "image", data: { image: "/media/a.png", link: "javascript:alert(1)" } }).success).toBe(false);
     expect(BlockSchema.safeParse({ type: "button", data: { label: "Klik", href: "https://tpb.test/x" } }).success).toBe(true);
     expect(BlockSchema.safeParse({ type: "button", data: { label: "Klik", href: "#pmb" } }).success).toBe(true);
+  });
+
+  it("preset dan settings juga menolak tautan tidak aman", () => {
+    expect(HeroSchema.safeParse({ ...heroFixture, primaryHref: "javascript:alert(1)" }).success).toBe(false);
+    expect(HeroSchema.safeParse({ ...heroFixture, primaryHref: "#pmb", secondaryHref: "https://tpb.test" }).success).toBe(true);
+    expect(CtaSchema.safeParse({ title: "T", body: "B", primary: "P", secondary: "S", secondaryHref: "javascript:alert(1)" }).success).toBe(false);
+    expect(FooterSchema.safeParse({ ...footerFixture, quickLinks: [{ label: "X", href: "javascript:alert(1)" }] }).success).toBe(false);
+    expect(FooterSchema.safeParse({ ...footerFixture, socials: { ...footerFixture.socials, facebook: "javascript:alert(1)" } }).success).toBe(false);
+    expect(SiteContentSchema.shape.pmbLink.safeParse("javascript:alert(1)").success).toBe(false);
+    expect(SiteContentSchema.shape.pmbLink.safeParse("https://pmb.tpb.test").success).toBe(true);
   });
 
   it("menolak URL video/embed tanpa host dan gambar protocol-relative", () => {

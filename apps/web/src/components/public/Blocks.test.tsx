@@ -69,9 +69,19 @@ describe("BlockRenderer", () => {
     const entries = buildBlockIndex(
       [block({ id: "b6", type: "heading", data: { text: "Kurikulum Baru", level: 2, align: "left" }, isVisible: true, anchor: "kurikulum" })],
       [{ label: "Akademik", href: "/#kurikulum" }],
+      "beranda",
     );
     expect(entries[0].group).toBe("Akademik");
-    expect(entries[0].href).toBe("#kurikulum");
+    expect(entries[0].href).toBe("/#kurikulum");
     expect(entries[0].text).toContain("Kurikulum Baru");
+  });
+
+  it("indeks memakai slug halaman selain beranda", () => {
+    const entries = buildBlockIndex(
+      [block({ id: "b7", type: "heading", data: { text: "Sejarah", level: 2, align: "left" }, isVisible: true, anchor: "sejarah" })],
+      [],
+      "profil",
+    );
+    expect(entries[0].href).toBe("/profil#sejarah");
   });
 });

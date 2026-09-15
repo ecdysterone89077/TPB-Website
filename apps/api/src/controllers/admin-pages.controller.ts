@@ -127,7 +127,7 @@ export class AdminPagesController {
       if (!page.blocks.length) throw new BadRequestException("Halaman tanpa blok tidak dapat diterbitkan.");
       const snapshot = PageRevisionDataSchema.parse({
         page: { title: page.title, slug: page.slug, seoTitle: page.seoTitle ?? "", seoDescription: page.seoDescription ?? "", ogImage: page.ogImage ?? null },
-        blocks: page.blocks.map(toBlock),
+        blocks: page.blocks.map(toBlock).map(sanitizeBlock),
       });
       const updated = await tx.page.update({
         where: { id },
@@ -184,7 +184,7 @@ export class AdminPagesController {
         });
         await tx.block.deleteMany({ where: { pageId: id } });
         for (let position = 0; position < snapshot.blocks.length; position++) {
-          const block = snapshot.blocks[position];
+          const block = sanitizeBlock(snapshot.blocks[position]);
           await tx.block.create({
             data: { pageId: id, type: block.type, position, data: block.data as any, isVisible: block.isVisible, anchor: block.anchor ?? null },
           });

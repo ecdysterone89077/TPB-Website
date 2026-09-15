@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Block, NavItemInput } from "@tpb/contracts";
 import { api } from "../../lib/api";
-import { navigate } from "../../lib/router";
+import { HOME_SLUG, navigate } from "../../lib/router";
 
 type Entry = { group: string; title: string; text: string; href: string };
 
@@ -21,7 +21,8 @@ const flattenStrings = (value: unknown, out: string[] = [], depth = 0): string[]
   return out;
 };
 
-export function buildBlockIndex(blocks: Block[], navigation: NavItemInput[]): Entry[] {
+export function buildBlockIndex(blocks: Block[], navigation: NavItemInput[], slug: string = HOME_SLUG): Entry[] {
+  const base = slug === HOME_SLUG ? "/" : `/${slug}`;
   const labelFor = (anchor?: string) => {
     const flat: NavItemInput[] = [];
     const walk = (items: NavItemInput[]) => { for (const item of items) { flat.push(item); walk(item.children ?? []); } };
@@ -37,13 +38,13 @@ export function buildBlockIndex(blocks: Block[], navigation: NavItemInput[]): En
         group: labelFor(block.anchor),
         title: parts[0] ?? block.type,
         text: parts.join(" ").slice(0, 220),
-        href: block.anchor ? `#${block.anchor}` : "#top",
+        href: block.anchor ? `${base}#${block.anchor}` : base,
       };
     })
     .filter((entry) => entry.text.length > 0);
 }
 
-export function SearchButton({ blocks, navigation, compact = false }: { blocks: Block[]; navigation: NavItemInput[]; compact?: boolean }) {
+export function SearchButton({ blocks, navigation, slug = HOME_SLUG, compact = false }: { blocks: Block[]; navigation: NavItemInput[]; slug?: string; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -64,11 +65,11 @@ export function SearchButton({ blocks, navigation, compact = false }: { blocks: 
         ? "rounded-full border border-midnight/15 px-4 py-2 text-xs font-bold"
         : "rounded-full px-4 py-2.5 text-[12px] font-bold text-midnight/70 transition hover:bg-midnight/5 hover:text-midnight"}
     >🔍 Cari</button>
-    {open && <SearchDialog blocks={blocks} navigation={navigation} onClose={() => setOpen(false)} />}
+    {open && <SearchDialog blocks={blocks} navigation={navigation} slug={slug} onClose={() => setOpen(false)} />}
   </>;
 }
 
-function SearchDialog({ blocks, navigation, onClose }: { blocks: Block[]; navigation: NavItemInput[]; onClose: () => void }) {
+function SearchDialog({ blocks, navigation, slug, onClose }: { blocks: Block[]; navigation: NavItemInput[]; slug: string; onClose: () => void }) {
   const [query, setQuery] = useState("");
   const [posts, setPosts] = useState<{ title: string; excerpt: string }[]>([]);
   useEffect(() => {
@@ -81,18 +82,19 @@ function SearchDialog({ blocks, navigation, onClose }: { blocks: Block[]; naviga
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (q.length < 2) return [];
-    const base = buildBlockIndex(blocks, navigation);
-    const scored = base.map((e) => {
+    const base = slug === HOME_SLUG ? "/" : `/${slug}`;
+    const baseIndex = buildBlockIndex(blocks, navigation, slug);
+    const scored = baseIndex.map((e) => {
       const hay = `${e.title} ${e.text}`.toLowerCase();
       const score = hay.includes(q) ? (e.title.toLowerCase().includes(q) ? 0 : 1) : 2;
       return { e, score };
     }).filter((s) => s.score < 2);
     for (const p of posts) {
       const hay = `${p.title} ${p.excerpt}`.toLowerCase();
-      if (hay.includes(q)) scored.push({ e: { group: "Berita", title: p.title, text: p.excerpt.slice(0, 220), href: "#berita" }, score: 1 });
+      if (hay.includes(q)) scored.push({ e: { group: "Berita", title: p.title, text: p.excerpt.slice(0, 220), href: `${base}#berita` }, score: 1 });
     }
     return scored.sort((x, y) => x.score - y.score).slice(0, 10).map((s) => s.e);
-  }, [query, blocks, navigation, posts]);
+  }, [query, blocks, navigation, slug, posts]);
   const go = (href: string) => { onClose(); navigate(href); };
   return <div className="fixed inset-0 z-[100] flex items-start justify-center bg-midnight/50 p-4 pt-24" onClick={onClose}>
     <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>

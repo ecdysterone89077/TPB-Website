@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SiteContentSchema } from "./content.js";
+import { SiteContentSchema, isSafeHref } from "./content.js";
 
 const S = SiteContentSchema.shape;
 
@@ -13,10 +13,6 @@ export const MediaRefSchema = z.union([ImageValueSchema, z.literal(""), z.null()
 export type MediaRef = z.infer<typeof MediaRefSchema>;
 
 const HTTP_URL = /^https?:\/\/[^\s/]+/i;
-
-/** Tautan aman: http(s) berhost, path absolut, anchor #, mailto:, atau tel:. */
-export const isSafeHref = (v: string) =>
-  !/\s/.test(v) && (HTTP_URL.test(v) || (v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\")) || v.startsWith("#") || /^(mailto|tel):[^\s]+/i.test(v));
 
 const SafeHrefSchema = z.string().trim().min(1).max(2000).refine(isSafeHref, { message: "Tautan harus http(s), path absolut, anchor #, mailto:, atau tel:." });
 const HttpUrlSchema = z.string().trim().min(1).max(2000).refine((v) => !/\s/.test(v) && HTTP_URL.test(v), { message: "URL harus http(s) dengan host yang valid." });
