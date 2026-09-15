@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
@@ -11,6 +12,20 @@ import { config } from "./config";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
+  // Bundel konten penuh bisa melebihi limit global; khusus route impor (ADMIN) dinaikkan.
+  // Verifikasi token ditempatkan sebelum parser agar body besar anonim tidak diproses.
+  const importJwt = new JwtService({ secret: config.jwtAccessSecret });
+  app.use("/v1/admin/content/import", (req: any, res: any, next: () => void) => {
+    const token = String(req.headers?.authorization ?? "").replace(/^Bearer\s+/i, "");
+    if (!token) return res.status(401).json({ message: "Token akses diperlukan." });
+    try {
+      importJwt.verify(token);
+      next();
+    } catch {
+      res.status(401).json({ message: "Token akses tidak valid." });
+    }
+  });
+  app.use("/v1/admin/content/import", express.json({ limit: "10mb" }));
   app.use(express.json({ limit: "2mb" }));
   app.use(express.urlencoded({ extended: true, limit: "2mb" }));
   app.use(helmet());

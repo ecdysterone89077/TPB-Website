@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { BlockSchema, type Block, type BlockType } from "@tpb/contracts";
+import { BlockSchema, SiteBundleSchema, type AdminUser, type Block, type BlockType } from "@tpb/contracts";
 import { api } from "../../lib/api";
 import { resetAnchorCache } from "../../lib/anchors";
 import { BlockRenderer } from "../public/Blocks";
+import { bundleFileName, bundlePreview, missingBundleMedia } from "./contentBundle";
 import { GROUP_ORDER, BLOCK_SPECS, blockLabel } from "./builder/specs";
 import type { FieldSpec } from "./builder/specs";
 import { FieldInput, ListObject, ListText } from "./builder/fields";
@@ -148,7 +149,7 @@ function Palette({ open, onClose, onAdd }: { open: boolean; onClose: () => void;
   );
 }
 
-export function PageBuilder() {
+export function PageBuilder({ user }: { user: AdminUser }) {
   const [pages, setPages] = useState<Awaited<ReturnType<typeof api.getAdminPages>>["pages"]>([]);
   const [page, setPage] = useState<AdminPageData | null>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -162,12 +163,23 @@ export function PageBuilder() {
   const [preview, setPreview] = useState(false);
   const [meta, setMeta] = useState({ title: "", slug: "", seoTitle: "", seoDescription: "" });
   const [revisions, setRevisions] = useState<{ id: string; createdAt: string }[] | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const loadPages = useCallback(async () => {
-    const r = await api.getAdminPages({ limit: 100 });
-    setPages(r.pages);
-    return r.pages;
+    const collected: Awaited<ReturnType<typeof api.getAdminPages>>["pages"] = [];
+    let offset = 0;
+    for (let index = 0; index < 10; index++) {
+      const result = await api.getAdminPages({ limit: 100, offset });
+      collected.push(...result.pages);
+      if (!result.pagination.hasMore) break;
+      offset += result.pagination.limit;
+    }
+    setPages(collected);
+    return collected;
   }, []);
 
   const openPage = useCallback(async (id: string) => {
@@ -359,6 +371,107 @@ export function PageBuilder() {
     }
   };
 
+  const listAllMedia = async () => {
+    const items: Awaited<ReturnType<typeof api.listMedia>>["media"] = [];
+    let offset = 0;
+    for (let index = 0; index < 50; index++) {
+      const result = await api.listMedia({ limit: 100, offset });
+      items.push(...result.media);
+      if (!result.pagination.hasMore) break;
+      offset += result.pagination.limit;
+    }
+    return items;
+  };
+
+  const exportContent = async () => {
+    if (dirty && !window.confirm("Ada perubahan belum disimpan yang tidak ikut diekspor. Lanjutkan?")) return;
+    setError("");
+    setNotice("");
+    setExportBusy(true);
+    try {
+      const data = await api.exportContent();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = bundleFileName(new Date());
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setNotice(`Konten diekspor: ${link.download}`);
+    } catch (e: any) {
+      setError(e?.message ?? "Gagal mengekspor konten.");
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
+  const importContent = async () => {
+    if (!importFile) return;
+    setError("");
+    setNotice("");
+    if (importFile.size > 10 * 1024 * 1024) {
+      setError("Ukuran berkas melebihi 10 MB. Pisahkan konten lalu impor bertahap.");
+      return;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(await importFile.text());
+    } catch {
+      setError("File bukan JSON yang valid.");
+      return;
+    }
+    let result: ReturnType<typeof SiteBundleSchema.safeParse>;
+    try {
+      result = SiteBundleSchema.safeParse(parsed);
+    } catch {
+      setError("Bundel tidak dapat dibaca (struktur terlalu dalam).");
+      return;
+    }
+    if (!result.success) {
+      const issue = result.error.issues[0];
+      setError(`Bundel tidak valid: ${issue ? `${issue.path.join(".") || "(root)"} — ${issue.message}` : "periksa kembali file."}`);
+      return;
+    }
+    try {
+      setImportBusy(true);
+      const media = await listAllMedia();
+      const missing = missingBundleMedia(result.data.media, media.map((item) => item.url));
+      const preview = bundlePreview(result.data, pages.map((item) => item.slug));
+      const lines = [
+        `Impor konten dari "${importFile.name}"?`,
+        ...(dirty ? ["- Peringatan: perubahan yang belum disimpan akan hilang."] : []),
+        `- ${preview.pages} halaman (${preview.newPages} baru), ${preview.posts} berita.`,
+        `- Menu navigasi diganti seluruhnya (${result.data.nav.length} menu utama).`,
+        result.data.settings ? "- Pengaturan situs akan ditimpa." : "- Pengaturan situs tidak ikut (bundel tanpa settings).",
+        missing.length
+          ? `- ${missing.length} media belum terdaftar di pustaka: ${missing.slice(0, 5).join(", ")}${missing.length > 5 ? ", …" : ""}.`
+          : "- Semua media sudah terdaftar di pustaka.",
+        "Halaman, blok, dan berita dengan slug sama akan ditimpa. Lanjutkan?",
+      ];
+      if (!window.confirm(lines.join("\n"))) {
+        setNotice("Impor dibatalkan.");
+        return;
+      }
+      const summary = await api.importContent(result.data);
+      resetAnchorCache();
+      const refreshed = await loadPages();
+      const target = refreshed.find((item) => item.id === page?.id) ?? refreshed[0];
+      if (target) await openPage(target.id);
+      setImportFile(null);
+      if (fileInput.current) fileInput.current.value = "";
+      const missingSummary = summary.mediaMissing.length
+        ? ` ${summary.mediaMissing.length} media belum ada: ${summary.mediaMissing.slice(0, 5).join(", ")}${summary.mediaMissing.length > 5 ? ", …" : ""}.`
+        : "";
+      setNotice(`Impor selesai: ${summary.pagesCreated} halaman baru, ${summary.pagesUpdated} halaman diperbarui, ${summary.postsCreated} berita baru, ${summary.postsUpdated} berita diperbarui, ${summary.navUpdated} menu, ${summary.settingsUpdated} pengaturan.${missingSummary}`);
+    } catch (e: any) {
+      setError(e?.message ?? "Gagal mengimpor konten.");
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
   if (loading) return <p className="text-sm text-slate-500">Memuat halaman…</p>;
 
   return (
@@ -366,6 +479,15 @@ export function PageBuilder() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-slate-900">Konten Halaman</h1>
         <div className="flex flex-wrap gap-2">
+          {user.role === "ADMIN" && (
+            <>
+              <button onClick={exportContent} disabled={exportBusy} className="button-secondary disabled:opacity-50">{exportBusy ? "Mengekspor…" : "Ekspor konten"}</button>
+              <button onClick={() => fileInput.current?.click()} className="button-secondary">Impor konten</button>
+              <input ref={fileInput} type="file" accept="application/json,.json" aria-label="File bundel konten" className="hidden" onChange={(event) => setImportFile(event.target.files?.[0] ?? null)} />
+              {importFile && <button onClick={importContent} disabled={importBusy} className="button-primary disabled:opacity-50">{importBusy ? "Mengimpor…" : `Terapkan impor (${importFile.name})`}</button>}
+              {importFile && <button onClick={() => { setImportFile(null); setNotice(""); if (fileInput.current) fileInput.current.value = ""; }} className="button-secondary">Batal impor</button>}
+            </>
+          )}
           <button onClick={createPage} className="button-secondary">+ Halaman baru</button>
           {page && <button onClick={deletePage} className="button-danger">Hapus halaman</button>}
         </div>
@@ -380,6 +502,9 @@ export function PageBuilder() {
           ))}
         </div>
       )}
+
+      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {notice && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p>}
 
       {!page ? (
         <div className="rounded-2xl bg-white p-6 text-sm text-slate-600 shadow-sm">
@@ -421,9 +546,6 @@ export function PageBuilder() {
             <button onClick={() => setPreview(true)} className="button-secondary">Pratinjau</button>
             <button onClick={openRevisions} className="button-secondary">Riwayat versi</button>
           </div>
-
-          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-          {notice && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p>}
 
           {blocks.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">

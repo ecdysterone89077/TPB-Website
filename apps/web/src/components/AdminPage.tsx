@@ -78,7 +78,7 @@ export function AdminPage() {
     <main className="flex-1 min-w-0 p-4 md:p-10 overflow-x-auto">
       <div className="md:hidden mb-5 flex gap-2 overflow-x-auto pb-1">{nav.map((item) => <button key={item.id} onClick={() => setView(item.id)} className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm ${view === item.id ? "bg-slate-900 text-white" : "bg-white text-slate-600"}`}>{item.label}</button>)}</div>
       {view === "dashboard" && <DashboardView />}
-      {view === "content" && <PageBuilder />}
+      {view === "content" && <PageBuilder user={user} />}
       {view === "settings" && <SettingsEditor />}
       {view === "posts" && <PostsView user={user} />}
       {view === "pmb" && <PmbView user={user} />}
