@@ -6,7 +6,8 @@ import { BackToTop, Footer } from "./components/public/ContentSections";
 import { Header } from "./components/public/Hero";
 import { useReveal } from "./components/public/ui";
 import { api } from "./lib/api";
-import { scrollToHash, slugFromPath, useAdminRoute, usePathname } from "./lib/router";
+import { scrollOrResolve } from "./lib/anchors";
+import { slugFromPath, useAdminRoute, usePathname } from "./lib/router";
 import { SiteProvider, useSite } from "./lib/site";
 
 const AdminPage = lazy(() => import("./components/AdminPage").then((module) => ({ default: module.AdminPage })));
@@ -71,16 +72,20 @@ function PublicApp() {
           document.head.appendChild(meta);
         }
         meta.setAttribute("content", result.seoDescription || "");
-        requestAnimationFrame(() => scrollToHash(window.location.hash));
+        requestAnimationFrame(() => scrollOrResolve(slug, window.location.hash));
       })
       .catch(() => alive && setState("error"));
     return () => { alive = false; };
   }, [slug]);
 
   useEffect(() => {
-    const onHash = () => scrollToHash(window.location.hash);
+    const onHash = () => scrollOrResolve(slugFromPath(window.location.pathname), window.location.hash);
     window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    window.addEventListener("tpb:navigate", onHash);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("tpb:navigate", onHash);
+    };
   }, []);
 
   if (site.status === "loading" || state === "loading") {

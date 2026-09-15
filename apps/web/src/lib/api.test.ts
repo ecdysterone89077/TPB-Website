@@ -84,3 +84,12 @@ describe("api.listAll", () => {
     expect(lastUrl).toContain("/posts?limit=5&all=1");
   });
 });
+
+describe("api.getAnchors", () => {
+  it("mengambil peta anchor dari endpoint publik", async () => {
+    stubFetch({ anchors: { dosen: "profil" } });
+
+    await expect(api.getAnchors()).resolves.toEqual({ dosen: "profil" });
+    expect(lastUrl).toContain("/anchors");
+  });
+});

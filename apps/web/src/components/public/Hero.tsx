@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Block, NavItemInput, SiteContent } from "@tpb/contracts";
 import { Crest } from "./ui";
 import { SearchButton } from "./Search";
@@ -19,8 +19,19 @@ export function Header({ brand, navigation, blocks, slug, onAdmin }: { brand: Si
   const [open, setOpen] = useState<string | null>(null);
   const [mobile, setMobile] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
+  const triggers = useRef(new Map<string, HTMLButtonElement>());
   useEffect(() => setLogoFailed(false), [brand.logoUrl]);
   useEffect(() => { const onScroll = () => setScrolled(window.scrollY > 24); onScroll(); window.addEventListener("scroll", onScroll, { passive: true }); return () => window.removeEventListener("scroll", onScroll); }, []);
+  useEffect(() => {
+    if (open === null) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      triggers.current.get(open)?.focus();
+      setOpen(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open]);
 
   const linkClass = "rounded-full px-4 py-2.5 text-[12px] font-bold text-midnight/70 transition hover:bg-midnight/5 hover:text-midnight";
 
@@ -39,8 +50,12 @@ export function Header({ brand, navigation, blocks, slug, onAdmin }: { brand: Si
 
           <nav className="ml-auto hidden items-center gap-0.5 xl:flex" onMouseLeave={() => setOpen(null)}>
             {navigation.map((item) => (
-              <div key={`${item.label}-${item.href}`} className="relative" onMouseEnter={() => setOpen(item.label)}>
-                <a href={item.href} onClick={(event) => { if (handleInternal(item.href)) event.preventDefault(); }} className={linkClass}>{item.label}</a>
+              <div key={`${item.label}-${item.href}`} className="relative" onPointerEnter={(event) => { if (event.pointerType !== "touch") setOpen(item.label); }}>
+                {item.children?.length ? (
+                  <button ref={(node) => { if (node) triggers.current.set(item.label, node); else triggers.current.delete(item.label); }} type="button" aria-expanded={open === item.label} onClick={() => setOpen((current) => (current === item.label ? null : item.label))} className={linkClass}>{item.label}</button>
+                ) : (
+                  <a href={item.href} onClick={(event) => { if (handleInternal(item.href)) event.preventDefault(); }} className={linkClass}>{item.label}</a>
+                )}
                 {item.children?.length && open === item.label ? (
                   <div className="absolute left-1/2 top-full mt-2 w-56 -translate-x-1/2 rounded-2xl border border-midnight/10 bg-white p-2 shadow-xl">
                     {item.children.map((child) => (
@@ -81,8 +96,8 @@ export function Header({ brand, navigation, blocks, slug, onAdmin }: { brand: Si
   );
 }
 
-export function Hero({ hero, onDaftar }: { hero: SiteContent["hero"]; onDaftar: () => void }) {
-  return <section id="top" className="relative min-h-screen overflow-hidden bg-midnight"><div className="absolute inset-0"><DriveImage src={hero.image} alt="" className="h-full w-full object-cover opacity-45" loading="eager" fetchPriority="high" sizes="100vw" srcSet={hero.image ? imageSrcSet(hero.image) : undefined} width={1920} height={1080} /><div className="absolute inset-0 bg-gradient-to-r from-midnight via-midnight/80 to-midnight/20" /></div><div className="relative mx-auto flex min-h-screen max-w-[1360px] items-center px-5 pb-20 pt-32 lg:px-10"><div className="max-w-3xl text-white"><span className="reveal inline-flex rounded-full border border-gold/50 bg-gold/10 px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-gold">{hero.badge}</span><h1 className="reveal mt-7 font-display text-5xl font-extrabold leading-[0.95] lg:text-8xl">{hero.line1}<br /><span className="text-gold">{hero.highlight}</span><br />{hero.line2}</h1><p className="reveal mt-7 max-w-xl text-base leading-relaxed text-white/75 lg:text-lg">{hero.subtitle}</p><div className="reveal mt-9 flex flex-wrap gap-3"><button onClick={onDaftar} className="rounded-full bg-gold px-7 py-3.5 text-sm font-extrabold text-midnight transition hover:-translate-y-0.5">{hero.primaryLabel}</button>{hero.secondaryLabel && <a href={hero.secondaryHref || hero.primaryHref || "#top"} className="rounded-full border border-white/30 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">{hero.secondaryLabel}</a>}</div></div></div></section>;
+export function Hero({ hero, onDaftar, anchor = "top" }: { hero: SiteContent["hero"]; onDaftar: () => void; anchor?: string }) {
+  return <section id={anchor} className="relative min-h-screen scroll-mt-24 overflow-hidden bg-midnight"><div className="absolute inset-0"><DriveImage src={hero.image} alt="" className="h-full w-full object-cover opacity-45" loading="eager" fetchPriority="high" sizes="100vw" srcSet={hero.image ? imageSrcSet(hero.image) : undefined} width={1920} height={1080} /><div className="absolute inset-0 bg-gradient-to-r from-midnight via-midnight/80 to-midnight/20" /></div><div className="relative mx-auto flex min-h-screen max-w-[1360px] items-center px-5 pb-20 pt-32 lg:px-10"><div className="max-w-3xl text-white"><span className="reveal inline-flex rounded-full border border-gold/50 bg-gold/10 px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-gold">{hero.badge}</span><h1 className="reveal mt-7 font-display text-5xl font-extrabold leading-[0.95] lg:text-8xl">{hero.line1}<br /><span className="text-gold">{hero.highlight}</span><br />{hero.line2}</h1><p className="reveal mt-7 max-w-xl text-base leading-relaxed text-white/75 lg:text-lg">{hero.subtitle}</p><div className="reveal mt-9 flex flex-wrap gap-3"><button onClick={onDaftar} className="rounded-full bg-gold px-7 py-3.5 text-sm font-extrabold text-midnight transition hover:-translate-y-0.5">{hero.primaryLabel}</button>{hero.secondaryLabel && <a href={hero.secondaryHref || hero.primaryHref || "#top"} className="rounded-full border border-white/30 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">{hero.secondaryLabel}</a>}</div></div></div></section>;
 }
 
-export function Marquee({ items }: { items: string[] }) { return <div className="overflow-hidden bg-gold py-3 text-midnight"><div className="marquee-track flex min-w-max gap-8 font-mono text-xs font-bold uppercase tracking-[0.2em]">{[...items, ...items].map((item, index) => <span key={`${item}-${index}`} className="flex items-center gap-8">{item}<span>✦</span></span>)}</div></div>; }
+export function Marquee({ items, anchor }: { items: string[]; anchor?: string }) { return <div id={anchor} className="scroll-mt-24 overflow-hidden bg-gold py-3 text-midnight"><div className="marquee-track flex min-w-max gap-8 font-mono text-xs font-bold uppercase tracking-[0.2em]">{[...items, ...items].map((item, index) => <span key={`${item}-${index}`} className="flex items-center gap-8">{item}<span>✦</span></span>)}</div></div>; }

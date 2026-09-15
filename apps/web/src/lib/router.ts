@@ -26,12 +26,17 @@ export function usePathname(): string {
   return path;
 }
 
-export function navigate(to: string) {
-  withinPageAnchor(to);
-  if (window.location.pathname + window.location.hash === to) return;
-  window.history.pushState({}, "", to);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.dispatchEvent(new Event("tpb:navigate"));
+export function navigate(to: string, options: { replace?: boolean } = {}) {
+  const url = new URL(to, window.location.origin);
+  const target = `${url.pathname}${url.search}${url.hash}`;
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (target !== current) {
+    if (options.replace) window.history.replaceState({}, "", to);
+    else window.history.pushState({}, "", to);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    window.dispatchEvent(new Event("tpb:navigate"));
+  }
+  scrollToHash(url.hash);
 }
 
 export function isAdminRoute(): boolean {
@@ -52,10 +57,4 @@ export function scrollToHash(hash: string) {
   if (!hash || hash === "#") return;
   const target = document.getElementById(hash.slice(1));
   target?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-export function withinPageAnchor(href: string) {
-  if (!href.startsWith("#")) return;
-  const target = document.getElementById(href.slice(1));
-  if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
 }

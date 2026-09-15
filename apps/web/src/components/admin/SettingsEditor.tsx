@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
-import type { NavItemInput, SiteSettings } from "@tpb/contracts";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { isSafeHref, type Block, type NavItemInput, type SiteSettings } from "@tpb/contracts";
 import { api } from "../../lib/api";
+import { HOME_SLUG } from "../../lib/router";
+import { anchorChoices, buildNavHref, emptyNavLink, parseNavHref, type NavLinkMode, type NavLinkValue } from "./navLink";
 import type { FieldSpec } from "./builder/specs";
 import { FieldInput } from "./builder/fields";
 
@@ -24,6 +26,89 @@ const FOOTER_FIELDS: FieldSpec[] = [
   link("footer.socials.facebook", "Facebook"), link("footer.socials.twitter", "Twitter/X"), link("footer.socials.youtube", "YouTube"), link("footer.socials.linkedin", "LinkedIn"),
   t("footer.quickLinksTitle", "Judul tautan cepat"), listObj("footer.quickLinks", "Tautan cepat", [t("label", "Tulisan"), link("href", "Tautan")]),
 ];
+
+export function NavLinkField({ href, onChange }: { href: string; onChange: (href: string) => void }) {
+  const [value, setValue] = useState<NavLinkValue>(() => parseNavHref(href));
+  const [pages, setPages] = useState<{ id: string; slug: string; title: string }[]>([]);
+  const [blocksByPage, setBlocksByPage] = useState<Record<string, Block[]>>({});
+  const [error, setError] = useState("");
+  const [loadingAnchors, setLoadingAnchors] = useState(false);
+  const lastEmitted = useRef(href);
+
+  useEffect(() => {
+    if (href === lastEmitted.current) return;
+    lastEmitted.current = href;
+    setValue(parseNavHref(href));
+  }, [href]);
+
+  useEffect(() => {
+    let alive = true;
+    api.getAdminPages({ limit: 100 })
+      .then((result) => { if (alive) setPages(result.pages.map((page) => ({ id: page.id, slug: page.slug, title: page.title }))); })
+      .catch((e: any) => { if (alive) setError(e?.message ?? "Gagal memuat daftar halaman."); });
+    return () => { alive = false; };
+  }, []);
+
+  const pageId = pages.find((page) => page.slug === value.slug)?.id ?? "";
+  useEffect(() => {
+    if (!pageId || blocksByPage[pageId]) return;
+    let alive = true;
+    setLoadingAnchors(true);
+    api.getAdminPage(pageId)
+      .then((page) => { if (alive) setBlocksByPage((current) => ({ ...current, [page.id]: page.blocks })); })
+      .catch((e: any) => { if (alive) setError(e?.message ?? "Gagal memuat bagian halaman."); })
+      .finally(() => { if (alive) setLoadingAnchors(false); });
+    return () => { alive = false; };
+  }, [pageId, blocksByPage]);
+
+  const apply = (next: NavLinkValue) => {
+    lastEmitted.current = buildNavHref(next);
+    setValue(next);
+    onChange(lastEmitted.current);
+  };
+  const changeMode = (mode: NavLinkMode) => {
+    if (mode === value.mode) return;
+    apply(mode === "page" ? emptyNavLink() : { mode, slug: HOME_SLUG, anchor: "", value: "" });
+  };
+
+  const knownPage = pages.some((page) => page.slug === value.slug);
+  const pageOptions = knownPage ? pages : [{ id: "", slug: value.slug, title: pages.length ? `${value.slug} (tidak ada di daftar)` : value.slug }, ...pages];
+  const anchors = anchorChoices(blocksByPage[pageId] ?? []);
+  const anchorOptions = value.anchor && !anchors.some((choice) => choice.value === value.anchor) ? [{ value: value.anchor, label: `#${value.anchor}` }, ...anchors] : anchors;
+  const invalid = !isSafeHref(buildNavHref(value));
+
+  return (
+    <div className="flex min-w-[260px] flex-1 flex-wrap items-center gap-2">
+      <select className="admin-input" value={value.mode} onChange={(event) => changeMode(event.target.value as NavLinkMode)} aria-label="Jenis tautan">
+        <option value="page">Halaman situs</option>
+        <option value="url">URL eksternal</option>
+        <option value="phone">Telepon</option>
+        <option value="email">Email</option>
+      </select>
+      {value.mode === "page" ? (
+        <>
+          <select className="admin-input" value={value.slug} onChange={(event) => apply({ ...value, slug: event.target.value, anchor: "" })} aria-label="Halaman">
+            {pageOptions.map((page) => <option key={`${page.id}-${page.slug}`} value={page.slug}>{page.title}</option>)}
+          </select>
+          <select className="admin-input" value={value.anchor} onChange={(event) => apply({ ...value, anchor: event.target.value })} aria-label="Bagian halaman">
+            <option value="">— tanpa bagian —</option>
+            {anchorOptions.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
+          </select>
+          {loadingAnchors && <span className="text-xs text-slate-500">Memuat bagian…</span>}
+        </>
+      ) : (
+        <input
+          className="admin-input flex-1"
+          value={value.value}
+          placeholder={value.mode === "url" ? "https://contoh.com" : value.mode === "phone" ? "+628123456789" : "nama@contoh.com"}
+          onChange={(event) => apply({ ...value, value: event.target.value })}
+        />
+      )}
+      {invalid && <span className="text-xs text-red-600">Tautan belum valid.</span>}
+      {error && <span className="text-xs text-red-600">{error}</span>}
+    </div>
+  );
+}
 
 function NavEditor({ items, onChange }: { items: NavItemInput[]; onChange: (items: NavItemInput[]) => void }) {
   const updateNode = (path: number[], patch: Partial<NavItemInput>) => {
@@ -66,7 +151,7 @@ function NavEditor({ items, onChange }: { items: NavItemInput[]; onChange: (item
     <div key={path.concat(index).join("-")} className={depth ? "ml-5 border-l border-slate-200 pl-3" : ""}>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <input className="admin-input flex-1" value={node.label} placeholder="Tulisan menu" onChange={(event) => updateNode([...path, index], { label: event.target.value })} />
-        <input className="admin-input flex-1" value={node.href} placeholder="/halaman atau https://..." onChange={(event) => updateNode([...path, index], { href: event.target.value })} />
+        <NavLinkField href={node.href} onChange={(href) => updateNode([...path, index], { href })} />
         <label className="flex items-center gap-1 text-xs text-slate-600"><input type="checkbox" checked={node.openInNewTab === true} onChange={(event) => updateNode([...path, index], { openInNewTab: event.target.checked })} />tab baru</label>
         <button type="button" onClick={() => moveNode([...path, index], -1)} disabled={index === 0} className="button-secondary disabled:opacity-30" aria-label="Naik">↑</button>
         <button type="button" onClick={() => moveNode([...path, index], 1)} disabled={index === list.length - 1} className="button-secondary disabled:opacity-30" aria-label="Turun">↓</button>
@@ -80,7 +165,7 @@ function NavEditor({ items, onChange }: { items: NavItemInput[]; onChange: (item
     <div>
       {renderList(items, [], 0)}
       <button type="button" onClick={() => addNode(null)} className="button-secondary mt-3">+ Tambah menu</button>
-      <p className="mt-2 text-xs text-slate-500">Contoh tautan: <code>/</code> (beranda), <code>/profil</code>, <code>/beranda#dosen</code>, atau <code>https://…</code>. Maksimal 3 tingkat.</p>
+      <p className="mt-2 text-xs text-slate-500">Pilih halaman dan bagiannya dari daftar; pilih URL eksternal/telepon/email untuk tautan luar. Maksimal 3 tingkat.</p>
     </div>
   );
 }

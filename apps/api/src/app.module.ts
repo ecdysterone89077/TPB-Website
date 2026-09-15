@@ -15,13 +15,14 @@ import { PagesController } from "./controllers/pages.controller";
 import { AdminPagesController } from "./controllers/admin-pages.controller";
 import { NavController } from "./controllers/nav.controller";
 import { SettingsController } from "./controllers/settings.controller";
+import { AnchorsController } from "./controllers/anchors.controller";
 
 const jwtSecret = config.jwtAccessSecret;
 const accessTtlSeconds = config.jwtAccessTtlSeconds;
 
 @Module({
   imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]), JwtModule.register({ secret: jwtSecret, signOptions: { expiresIn: accessTtlSeconds } })],
-  controllers: [AuthController, PostsController, PmbController, PublicController, AdminController, PagesController, AdminPagesController, NavController, SettingsController],
+  controllers: [AuthController, PostsController, PmbController, PublicController, AdminController, PagesController, AdminPagesController, NavController, SettingsController, AnchorsController],
   providers: [PrismaService, JwtAuthGuard, RolesGuard, { provide: APP_GUARD, useClass: ThrottlerGuard }, { provide: APP_INTERCEPTOR, useClass: AuditInterceptor }],
 })
 export class AppModule {}

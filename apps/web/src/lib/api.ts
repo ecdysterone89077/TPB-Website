@@ -138,6 +138,11 @@ export const api = {
     return d.settings;
   },
 
+  async getAnchors(): Promise<Record<string, string>> {
+    const d = await request<{ anchors: Record<string, string> }>(`/anchors`);
+    return d.anchors;
+  },
+
   /* ------------------------------------------------- builder (admin) */
 
   async getAdminPages(params?: PageParams): Promise<{ pages: (PageSummary & { blockCount?: number })[]; pagination: PaginationMeta }> {

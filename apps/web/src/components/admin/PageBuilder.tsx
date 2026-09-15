@@ -4,6 +4,7 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import { BlockSchema, type Block, type BlockType } from "@tpb/contracts";
 import { api } from "../../lib/api";
+import { resetAnchorCache } from "../../lib/anchors";
 import { BlockRenderer } from "../public/Blocks";
 import { GROUP_ORDER, BLOCK_SPECS, blockLabel } from "./builder/specs";
 import type { FieldSpec } from "./builder/specs";
@@ -263,6 +264,7 @@ export function PageBuilder() {
     setNotice("");
     try {
       await api.publishPage(page.id);
+      resetAnchorCache();
       setPage((current) => (current ? { ...current, status: "published" } : current));
       setNotice("Halaman diterbitkan — perubahan sudah tampil di situs.");
       await loadPages();
@@ -279,6 +281,7 @@ export function PageBuilder() {
     setError("");
     try {
       await api.unpublishPage(page.id);
+      resetAnchorCache();
       setPage({ ...page, status: "draft" });
       setNotice("Halaman disembunyikan dari situs (draft).");
       await loadPages();
@@ -314,6 +317,7 @@ export function PageBuilder() {
     setBusy(true);
     try {
       await api.deletePage(page.id);
+      resetAnchorCache();
       const list = await loadPages();
       if (list.length) await openPage(list[0].id);
       else setPage(null);
@@ -340,6 +344,7 @@ export function PageBuilder() {
     setBusy(true);
     try {
       const restored = await api.restoreRevision(page.id, revisionId);
+      resetAnchorCache();
       setPage(restored);
       setBlocks(restored.blocks);
       setMeta({ title: restored.title, slug: restored.slug, seoTitle: restored.seoTitle ?? "", seoDescription: restored.seoDescription ?? "" });
