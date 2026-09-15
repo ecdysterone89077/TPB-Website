@@ -95,6 +95,15 @@ describe("AuditInterceptor", () => {
     expect(prisma.auditLog.create.mock.calls[0][0].data.metadata).toBeNull();
   });
 
+  it("body /admin/content/import tidak pernah dipersist (bundel besar)", async () => {
+    const prisma = makePrisma();
+    const i = new AuditInterceptor(prisma as any);
+    await run(i, makeCtx({ method: "POST", routePath: "/admin/content/import", body: { pages: [{ title: "x" }] } }));
+    const args = prisma.auditLog.create.mock.calls[0][0];
+    expect(args.data.metadata).toBeNull();
+    expect(args.data.action).toBe("POST /admin/content/import");
+  });
+
   it("kegagalan audit tidak menggagalkan request (fire-and-forget)", async () => {
     const prisma = { auditLog: { create: jest.fn().mockRejectedValue(new Error("db down")) } };
     const i = new AuditInterceptor(prisma as any);

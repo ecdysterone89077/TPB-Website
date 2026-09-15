@@ -1,5 +1,5 @@
 import type {
-  AdminUser, AuditEntry, Block, DashboardSummary, MediaAsset, NavItemInput, PageSummary, Post, PublicPage, Registration, SiteSettings, Subscriber,
+  AdminUser, AuditEntry, Block, DashboardSummary, ImportSummary, MediaAsset, NavItemInput, PageSummary, Post, PublicPage, Registration, SiteBundle, SiteSettings, Subscriber,
 } from "@tpb/contracts";
 
 const BASE = (import.meta.env.VITE_API_URL || "http://localhost:3000/v1").replace(/\/$/, "");
@@ -202,6 +202,18 @@ export const api = {
     return d.settings;
   },
 
+  /* ------------------------------------------------ bundel konten (ADMIN) */
+
+  async exportContent(): Promise<SiteBundle> {
+    const d = await request<{ bundle: SiteBundle }>(`/admin/content/export`);
+    return d.bundle;
+  },
+
+  async importContent(bundle: SiteBundle): Promise<ImportSummary> {
+    const d = await request<{ summary: ImportSummary }>(`/admin/content/import`, jsonInit(bundle));
+    return d.summary;
+  },
+
   /* ---------------------------------------------------------- posts */
 
   async listPublic(params?: PageParams): Promise<Post[]> {
@@ -320,4 +332,4 @@ export const api = {
   },
 };
 
-export type { AdminUser, AuditEntry, Post, Registration, SiteSettings, Subscriber, MediaAsset, DashboardSummary, PublicPage, PageSummary, NavItemInput };
+export type { AdminUser, AuditEntry, ImportSummary, Post, Registration, SiteBundle, SiteSettings, Subscriber, MediaAsset, DashboardSummary, PublicPage, PageSummary, NavItemInput };

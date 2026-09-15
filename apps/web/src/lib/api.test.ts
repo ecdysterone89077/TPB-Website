@@ -9,13 +9,19 @@ function jsonResp(body: unknown, status = 200): Response {
 }
 
 let lastUrl = "";
+let lastMethod = "GET";
+let lastBody: unknown = null;
 
 function stubFetch(body: unknown, status = 200): void {
   lastUrl = "";
+  lastMethod = "GET";
+  lastBody = null;
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (input: unknown) => {
+    vi.fn(async (input: unknown, init?: RequestInit) => {
       lastUrl = String(input);
+      lastMethod = init?.method ?? "GET";
+      lastBody = init?.body ?? null;
       return jsonResp(body, status);
     }),
   );
@@ -91,5 +97,27 @@ describe("api.getAnchors", () => {
 
     await expect(api.getAnchors()).resolves.toEqual({ dosen: "profil" });
     expect(lastUrl).toContain("/anchors");
+  });
+});
+
+describe("api bundel konten", () => {
+  const bundle = { version: 1, exportedAt: "2026-09-15T00:00:00.000Z", settings: null, nav: [], pages: [], posts: [], media: [] };
+
+  it("mengekspor bundel dari endpoint admin", async () => {
+    stubFetch({ bundle });
+
+    await expect(api.exportContent()).resolves.toEqual(bundle);
+    expect(lastUrl).toContain("/admin/content/export");
+    expect(lastMethod).toBe("GET");
+  });
+
+  it("mengirim bundel ke endpoint impor dan mengembalikan ringkasan", async () => {
+    const summary = { pagesCreated: 1, pagesUpdated: 2, postsCreated: 0, postsUpdated: 0, settingsUpdated: 1, navUpdated: 0, mediaMissing: [] };
+    stubFetch({ summary });
+
+    await expect(api.importContent(bundle as never)).resolves.toEqual(summary);
+    expect(lastUrl).toContain("/admin/content/import");
+    expect(lastMethod).toBe("POST");
+    expect(JSON.parse(String(lastBody))).toEqual(bundle);
   });
 });

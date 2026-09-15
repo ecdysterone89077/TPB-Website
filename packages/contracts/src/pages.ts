@@ -87,7 +87,7 @@ export const NavItemInputSchema: z.ZodType<NavItemInput> = z.lazy(() =>
   }),
 );
 
-const maxNavDepth = (nodes: NavItemInput[], depth = 1): number =>
+export const maxNavDepth = (nodes: NavItemInput[], depth = 1): number =>
   nodes.reduce((max, node) => Math.max(max, node.children?.length ? maxNavDepth(node.children, depth + 1) : depth), depth);
 
 export const NavigationInputSchema = z

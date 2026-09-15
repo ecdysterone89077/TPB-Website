@@ -273,6 +273,7 @@ Model konten: tabel `pages`, `blocks`, `nav_items`, `site_settings`, `page_revis
 | `PUT /v1/admin/pages/:id/blocks` | ADMIN+EDITOR | simpan blok transaksional (id blok dipertahankan; id duplikat ditolak) |
 | `POST /v1/admin/pages/:id/publish` / `unpublish` | ADMIN+EDITOR | terbit (minimal 1 blok) + snapshot revisi |
 | `GET /v1/admin/pages/:id/revisions`, `POST /v1/admin/pages/:id/revisions/:revisionId/restore` | ADMIN+EDITOR | riwayat & pemulihan; restore mengarsipkan keadaan sekarang lalu kembali draft |
+| `GET /v1/admin/content/export`, `POST /v1/admin/content/import` | ADMIN | ekspor/impor penuh (settings, menu, halaman+blok, berita, daftar media); merge berdasarkan slug dalam satu transaksi |
 
 Alamat halaman memakai path asli (`/`, `/profil`, dst.); SPA fallback disediakan `vercel.json` dan konfigurasi Nginx (`try_files ... /index.html`) — lihat bagian deployment.
 
@@ -286,6 +287,18 @@ pnpm content:drop-legacy -- --yes   # hapus tabel legacy (site_modules, site_con
 ```
 
 **Penting untuk produksi (hanya sekali, manual — bukan bagian script deploy):** setelah `pnpm db:migrate:deploy` pertama kali, jalankan urutan `content:migrate` → `content:migrate:write` → `content:migrate:reconcile` → `content:drop-legacy -- --yes` **setelah backup database**. Jangan menaruh langkah migrasi di webhook deploy: setelah tabel legacy di-drop, `content:migrate` otomatis no-op (aman), tetapi menjalankannya berulang sebelum drop akan menimpa editan konten dari panel.
+
+## Deploy Baru → Impor Konten
+
+Untuk environment baru (database kosong) atau pemulihan cepat tanpa seeder institusi:
+
+1. **Environment lama:** buka `/#admin` → **Konten Halaman** → **Ekspor konten** (khusus ADMIN). Berkas `tpb-konten-<YYYYMMDD-HHmm>.json` berisi settings, menu, semua halaman + blok, semua berita, dan daftar media (URL saja — berkas media tidak ikut). Ekspor memvalidasi kontrak; jika ada data lama yang tidak valid, ekspor ditolak dengan pesan bagian yang bermasalah.
+2. Pindahkan arsip media (`MEDIA_DIR`) secara terpisah dari database (mis. `rsync`) ke environment baru — **jangan unggah ulang**; impor akan mendaftarkan kembali entri pustaka Media dari bundel sehingga URL `/media/...` yang sudah disalin tetap terkelola.
+3. **Environment baru:** buat admin pertama lewat `/#admin` (bootstrap), lalu **Konten Halaman** → **Impor konten** → pilih berkas → periksa pratinjau (jumlah halaman/berita, menu diganti seluruhnya, settings, media yang belum terdaftar) → konfirmasi.
+4. Impor berjalan dalam **satu transaksi** dan **merge berdasarkan slug**: halaman dengan slug sama diperbarui (blok diganti berurutan), halaman baru dibuat, menu diganti seluruhnya, settings di-upsert, berita dengan slug sama diperbarui (termasuk menghidupkan kembali berita yang dihapus). Halaman berstatus terbit ikut membuat snapshot revisi. Halaman/berita yang **tidak ada di bundel dibiarkan apa adanya** — ini bukan pemulihan penuh; `ogImage` yang tidak ada di bundel akan dikosongkan.
+5. Setelah impor: periksa situs publik dan **Terbitkan** halaman yang masih draf bila perlu.
+
+> **Penting:** impor **tidak** menyimpan snapshot keadaan sebelumnya. Untuk environment yang sudah berisi konten, ambil backup MySQL dulu. Batas ukuran berkas bundel: 10 MB (limit body khusus endpoint impor; limit global API 2 MB). Untuk situs besar, pisahkan halaman menjadi beberapa bundel atau naikkan limit secara sadar di `apps/api/src/main.ts`.
 
 ## Migrasi Data dari Supabase
 
