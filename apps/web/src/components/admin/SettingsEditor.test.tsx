@@ -34,12 +34,12 @@ function Harness({ initial }: { initial: string }) {
   );
 }
 
-const settingsFixture = (texts?: Settings["texts"]): Settings => ({
+const settingsFixture = (texts?: Settings["texts"], socials: Settings["footer"]["socials"] = []): Settings => ({
   brand: { kicker: "", name: "TPB", org: "UNU", logoUrl: "" },
   pmbLink: "#pmb",
   footer: {
     newsletterTitle: "N", infoTitle: "I", quickLinksTitle: "T", galleryTitle: "G", submitLabel: "Kirim",
-    socials: [],
+    socials,
     contact: { phone: "", email: "a@b.test", address: "Purwokerto" },
     quickLinks: [], copyright: "", tagline: "",
   },
@@ -100,6 +100,29 @@ describe("SettingsEditor — teks sistem", () => {
     const payload = api.saveSettings.mock.calls[0][0] as Settings;
     expect(payload.texts).toBeUndefined();
     await waitFor(() => expect((screen.getByLabelText("Akhiran judul situs") as HTMLInputElement).value).toBe("TPB UNU Purwokerto"));
+  });
+});
+
+describe("SettingsEditor — media sosial", () => {
+  it("menampilkan daftar media sosial dan menyimpan perubahan label", async () => {
+    api.getSettings.mockResolvedValue(settingsFixture(undefined, [{ label: "Instagram TPB UNU Purwokerto", href: "https://www.instagram.com/tpb_unupurwokerto/" }]));
+    render(<SettingsEditor />);
+
+    const label = (await screen.findByDisplayValue("Instagram TPB UNU Purwokerto")) as HTMLInputElement;
+    expect((screen.getByDisplayValue("https://www.instagram.com/tpb_unupurwokerto/") as HTMLInputElement).value).toBe("https://www.instagram.com/tpb_unupurwokerto/");
+    fireEvent.change(label, { target: { value: "Instagram TPB" } });
+    fireEvent.click(screen.getByRole("button", { name: "Simpan pengaturan" }));
+
+    await waitFor(() => expect(api.saveSettings).toHaveBeenCalledTimes(1));
+    const payload = api.saveSettings.mock.calls[0][0] as Settings;
+    expect(payload.footer.socials).toEqual([{ label: "Instagram TPB", href: "https://www.instagram.com/tpb_unupurwokerto/" }]);
+  });
+
+  it("tombol tambah membuat baris media sosial bawaan", async () => {
+    render(<SettingsEditor />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "+ Tambah Media sosial" }));
+    expect((await screen.findByDisplayValue("Media sosial")) as HTMLInputElement).toBeTruthy();
   });
 });
 

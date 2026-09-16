@@ -6,7 +6,7 @@ const hero = { badge: "Uji", line1: "Satu", highlight: "Dua", line2: "Tiga", sub
 const brand = { kicker: "K", name: "TPB Uji", org: "UNU", logoUrl: "/media/logo.png" };
 const footer = {
   newsletterTitle: "N", infoTitle: "I", quickLinksTitle: "T", galleryTitle: "G", submitLabel: "Kirim",
-  socials: [],
+  socials: { facebook: "https://www.facebook.com/tpb", twitter: "", youtube: "", linkedin: "" },
   contact: { phone: "", email: "a@b.test", address: "Purwokerto" },
   quickLinks: [], copyright: "C", tagline: "T",
 };
@@ -72,6 +72,7 @@ test("pengaturan global diambil dari brand/footer/pmbLink", () => {
   const plan = buildMigration({ modules });
   assert.equal(plan.settings?.brand.name, "TPB Uji");
   assert.equal(plan.settings?.pmbLink, "#pmb");
+  assert.deepEqual(plan.settings?.footer.socials, [{ label: "Facebook", href: "https://www.facebook.com/tpb" }]);
 });
 
 test("statistik memakai site_stats bila modul stats kosong", () => {

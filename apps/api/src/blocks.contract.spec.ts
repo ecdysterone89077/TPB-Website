@@ -163,11 +163,13 @@ describe("footer.socials", () => {
     expect(FooterSchema.parse({ ...footerFixture, socials: { tiktok: "https://www.tiktok.com/@x" } }).socials).toEqual([{ label: "tiktok", href: "https://www.tiktok.com/@x" }]);
   });
 
-  it("tanpa socials menjadi daftar kosong; label kosong dan bentuk tidak dikenal ditolak", () => {
+  it("tanpa socials menjadi daftar kosong; label kosong dan bentuk bukan daftar ditolak", () => {
     expect(FooterSchema.parse({ ...footerFixture, socials: undefined }).socials).toEqual([]);
     expect(FooterSchema.safeParse({ ...footerFixture, socials: [{ label: "", href: "https://tpb.test" }] }).success).toBe(false);
     expect(FooterSchema.safeParse({ ...footerFixture, socials: [{ label: "X", href: "#top" }] }).success).toBe(true);
     expect(FooterSchema.safeParse({ ...footerFixture, socials: "bukan-array" }).success).toBe(false);
+    expect(FooterSchema.safeParse({ ...footerFixture, socials: { facebook: "javascript:alert(1)" } }).success).toBe(false);
+    expect(FooterSchema.safeParse({ ...footerFixture, socials: { facebook: 123 } }).success).toBe(false);
   });
 });
 

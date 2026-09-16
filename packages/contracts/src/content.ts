@@ -196,20 +196,21 @@ const KickerTitleSchema = z.object({ kicker: z.string().max(300), title: z.strin
 const TextListSchema = z.array(z.string().max(500)).max(100);
 const MetricSchema = z.object({ v: z.string().max(100), l: z.string().max(200) });
 
-/* Media sosial footer: daftar label+tautan. Bentuk lama (objek facebook/twitter/youtube/linkedin)
-   masih diterima dan dinormalkan agar data tersimpan serta bundel konten lama tetap valid. */
+/* Media sosial footer: daftar label+tautan; bentuk lama (objek 4 kanal) tetap dinormalkan dengan urutan tetap. */
 const SocialLinkSchema = z.object({
   label: z.string().trim().min(1).max(200),
   href: SafeHrefSchema,
 });
-export type SocialLink = z.infer<typeof SocialLinkSchema>;
 
+const LEGACY_SOCIAL_KEYS = ["facebook", "twitter", "youtube", "linkedin"];
 const LEGACY_SOCIAL_LABELS: Record<string, string> = { facebook: "Facebook", twitter: "Twitter", youtube: "YouTube", linkedin: "LinkedIn" };
 const normalizeSocials = (value: unknown): unknown => {
   if (!value || Array.isArray(value) || typeof value !== "object") return value;
-  return Object.entries(value as Record<string, unknown>)
-    .filter(([, href]) => typeof href === "string" && href.trim() !== "")
-    .map(([key, href]) => ({ label: LEGACY_SOCIAL_LABELS[key] ?? key, href }));
+  const record = value as Record<string, unknown>;
+  const keys = [...LEGACY_SOCIAL_KEYS, ...Object.keys(record).filter((key) => !LEGACY_SOCIAL_KEYS.includes(key))];
+  return keys
+    .filter((key) => record[key] !== undefined && !(typeof record[key] === "string" && (record[key] as string).trim() === ""))
+    .map((key) => ({ label: LEGACY_SOCIAL_LABELS[key] ?? key, href: record[key] }));
 };
 
 export const SiteContentSchema = z.object({
