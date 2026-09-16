@@ -39,8 +39,21 @@ export function formatDate(iso: string) {
   return date.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-export function Band({ id, tone = "cream", kicker, title, intro, children }: { id: string; tone?: "cream" | "white"; kicker: string; title: string; intro?: string; children?: ReactNode }) {
-  return <section id={id} className={`scroll-mt-24 ${tone === "cream" ? "bg-cream" : "bg-white"} py-16`}><div className="mx-auto max-w-[1360px] px-5 lg:px-10"><div className="reveal max-w-2xl"><span className="font-mono text-[11px] uppercase tracking-[0.3em] text-leaf-600">{kicker}</span><h2 className="mt-3 font-display text-3xl font-extrabold leading-tight text-midnight lg:text-4xl">{title}</h2>{intro && <p className="mt-4 text-[15px] leading-relaxed text-midnight/70">{intro}</p>}</div>{children && <div className="mt-10">{children}</div>}</div></section>;
+export function Band({ id, tone = "cream", kicker, title, intro, children }: { id: string; tone?: "cream" | "white" | "midnight"; kicker: string; title: string; intro?: string; children?: ReactNode }) {
+  const tones = { cream: "bg-cream", white: "bg-white", midnight: "bg-midnight" };
+  const dark = tone === "midnight";
+  return (
+    <section id={id} className={`scroll-mt-24 ${tones[tone]} py-16 lg:py-24`}>
+      <div className="mx-auto max-w-[1360px] px-5 lg:px-10">
+        <div className="reveal max-w-3xl">
+          <span className={`section-kicker kicker-rule ${dark ? "text-gold" : "text-leaf-600"}`}>{kicker}</span>
+          <h2 className={`mt-4 font-display text-3xl font-extrabold leading-[1.08] ${dark ? "text-white" : "text-midnight"} lg:text-[2.6rem]`}>{title}</h2>
+          {intro && <p className={`mt-5 text-[15px] leading-relaxed ${dark ? "text-white/70" : "text-midnight/70"}`}>{intro}</p>}
+        </div>
+        {children && <div className="mt-10 lg:mt-12">{children}</div>}
+      </div>
+    </section>
+  );
 }
 
 /** Decorative shield marked with rising growth lines — not an institution logo. */

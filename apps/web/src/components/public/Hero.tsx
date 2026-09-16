@@ -34,6 +34,7 @@ export function Header({ brand, navigation, blocks, slug, onAdmin }: { brand: Si
   }, [open]);
 
   const linkClass = "rounded-full px-4 py-2.5 text-[12px] font-bold text-midnight/70 transition hover:bg-midnight/5 hover:text-midnight";
+  const instagramHref = navigation.reduce<string | null>((found, item) => found ?? item.children?.find((child) => /instagram\.com/i.test(child.href))?.href ?? null, null);
 
   return (
     <header className="fixed inset-x-0 top-0 z-50">
@@ -69,6 +70,7 @@ export function Header({ brand, navigation, blocks, slug, onAdmin }: { brand: Si
               </div>
             ))}
             <SearchButton blocks={blocks} navigation={navigation} slug={slug} />
+            {instagramHref && <a href={instagramHref} target="_blank" rel="noopener noreferrer" aria-label="Instagram TPB" title="Instagram TPB" className="grid h-9 w-9 place-items-center rounded-full border border-midnight/15 text-midnight/70 transition hover:-translate-y-0.5 hover:border-gold hover:text-midnight"><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg></a>}
             <button onClick={onAdmin} className="rounded-full bg-midnight px-4 py-2.5 text-[12px] font-bold text-white transition hover:bg-midnight-700">Admin</button>
           </nav>
 
@@ -88,6 +90,7 @@ export function Header({ brand, navigation, blocks, slug, onAdmin }: { brand: Si
                 ))}
               </div>
             ))}
+            {instagramHref && <a href={instagramHref} target="_blank" rel="noopener noreferrer" onClick={() => setMobile(false)} className="block rounded-xl px-3 py-2 text-sm font-bold text-midnight/80 hover:bg-cream">Instagram</a>}
             <button onClick={() => { setMobile(false); onAdmin(); }} className="mt-2 w-full rounded-xl bg-midnight px-3 py-2 text-sm font-bold text-white">Panel Admin</button>
           </div>
         )}
@@ -97,7 +100,7 @@ export function Header({ brand, navigation, blocks, slug, onAdmin }: { brand: Si
 }
 
 export function Hero({ hero, onDaftar, anchor = "top" }: { hero: SiteContent["hero"]; onDaftar: () => void; anchor?: string }) {
-  return <section id={anchor} className="relative min-h-screen scroll-mt-24 overflow-hidden bg-midnight"><div className="absolute inset-0"><DriveImage src={hero.image} alt="" className="h-full w-full object-cover opacity-45" loading="eager" fetchPriority="high" sizes="100vw" srcSet={hero.image ? imageSrcSet(hero.image) : undefined} width={1920} height={1080} /><div className="absolute inset-0 bg-gradient-to-r from-midnight via-midnight/80 to-midnight/20" /></div><div className="relative mx-auto flex min-h-screen max-w-[1360px] items-center px-5 pb-20 pt-32 lg:px-10"><div className="max-w-3xl text-white"><span className="reveal inline-flex rounded-full border border-gold/50 bg-gold/10 px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-gold">{hero.badge}</span><h1 className="reveal mt-7 font-display text-5xl font-extrabold leading-[0.95] lg:text-8xl">{hero.line1}<br /><span className="text-gold">{hero.highlight}</span><br />{hero.line2}</h1><p className="reveal mt-7 max-w-xl text-base leading-relaxed text-white/75 lg:text-lg">{hero.subtitle}</p><div className="reveal mt-9 flex flex-wrap gap-3"><button onClick={onDaftar} className="rounded-full bg-gold px-7 py-3.5 text-sm font-extrabold text-midnight transition hover:-translate-y-0.5">{hero.primaryLabel}</button>{hero.secondaryLabel && <a href={hero.secondaryHref || hero.primaryHref || "#top"} className="rounded-full border border-white/30 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">{hero.secondaryLabel}</a>}</div></div></div></section>;
+  return <section id={anchor} className="relative min-h-[100svh] scroll-mt-24 overflow-hidden bg-midnight"><div className="absolute inset-0"><DriveImage src={hero.image} alt="" className="h-full w-full object-cover opacity-45" loading="eager" fetchPriority="high" sizes="100vw" srcSet={hero.image ? imageSrcSet(hero.image) : undefined} width={1920} height={1080} /><div className="absolute inset-0 bg-gradient-to-r from-midnight via-midnight/80 to-midnight/20" /></div><div className="relative mx-auto flex min-h-[100svh] max-w-[1360px] items-center px-5 pb-16 pt-24 lg:px-10"><div className="max-w-3xl text-white"><span className="reveal inline-flex rounded-full border border-gold/50 bg-gold/10 px-4 py-2 font-mono text-xs uppercase tracking-[0.22em] text-gold">{hero.badge}</span><h1 className="reveal mt-6 font-display text-[2.6rem] font-extrabold leading-[1.02] lg:text-7xl">{hero.line1}<br /><span className="text-gold">{hero.highlight}</span><br />{hero.line2}</h1><p className="reveal mt-6 max-w-xl text-[15px] leading-relaxed text-white/75 lg:text-base">{hero.subtitle}</p><div className="reveal mt-8 flex flex-wrap gap-3"><button onClick={onDaftar} className="rounded-full bg-gold px-7 py-3.5 text-sm font-extrabold text-midnight transition hover:-translate-y-0.5">{hero.primaryLabel}</button>{hero.secondaryLabel && <a href={hero.secondaryHref || hero.primaryHref || "#top"} className="rounded-full border border-white/30 px-7 py-3.5 text-sm font-bold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/10">{hero.secondaryLabel}</a>}</div></div></div></section>;
 }
 
 export function Marquee({ items, anchor }: { items: string[]; anchor?: string }) { return <div id={anchor} className="scroll-mt-24 overflow-hidden bg-gold py-3 text-midnight"><div className="marquee-track flex min-w-max gap-8 font-mono text-xs font-bold uppercase tracking-[0.2em]">{[...items, ...items].map((item, index) => <span key={`${item}-${index}`} className="flex items-center gap-8">{item}<span>✦</span></span>)}</div></div>; }

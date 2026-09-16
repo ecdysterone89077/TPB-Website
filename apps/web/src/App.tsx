@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import type { PublicPage } from "@tpb/contracts";
 import { Pmb } from "./components/Pmb";
 import { BlockRenderer } from "./components/public/Blocks";
-import { BackToTop, Footer } from "./components/public/ContentSections";
+import { BackToTop, Footer } from "./components/public/Footer";
 import { Header } from "./components/public/Hero";
 import { useReveal } from "./components/public/ui";
 import { api } from "./lib/api";

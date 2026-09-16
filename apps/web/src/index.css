@@ -149,6 +149,45 @@ html {
   }
 }
 
+/* ------------------------------------------------ public section primitives */
+
+@layer components {
+  .card {
+    @apply rounded-3xl border border-midnight/10 bg-white p-6 shadow-[0_18px_40px_-32px_rgba(14,16,68,0.5)] transition duration-300;
+  }
+  .surface {
+    @apply rounded-3xl border border-midnight/10 bg-white shadow-[0_18px_40px_-32px_rgba(14,16,68,0.5)] transition duration-300;
+  }
+  .lift {
+    @apply hover:-translate-y-1 hover:border-midnight/20 hover:shadow-[0_30px_60px_-34px_rgba(14,16,68,0.55)];
+  }
+  .tile {
+    @apply relative overflow-hidden rounded-3xl border border-midnight/10 bg-midnight/10 shadow-[0_18px_40px_-32px_rgba(14,16,68,0.5)] transition duration-300 hover:-translate-y-1;
+  }
+  .map-frame {
+    @apply w-full overflow-hidden rounded-3xl border border-midnight/10 shadow-[0_24px_50px_-40px_rgba(14,16,68,0.6)];
+  }
+  .card-hover {
+    @apply hover:-translate-y-1 hover:border-midnight/20 hover:shadow-[0_30px_60px_-34px_rgba(14,16,68,0.55)];
+  }
+  .chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-midnight/12 bg-white px-4 py-2 text-sm text-midnight/75 transition duration-300 hover:-translate-y-0.5 hover:border-leaf-600/50 hover:text-midnight;
+  }
+  .social-chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/75 transition duration-300 hover:-translate-y-0.5 hover:border-gold/60 hover:text-white;
+  }
+  .link-arrow {
+    @apply grid h-9 w-9 shrink-0 place-items-center rounded-full bg-midnight/5 text-gold transition duration-300 group-hover:bg-gold group-hover:text-midnight;
+  }
+  .section-kicker {
+    @apply inline-flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.3em];
+  }
+  .kicker-rule::before {
+    content: "";
+    @apply block h-[2px] w-6 shrink-0 bg-gold;
+  }
+}
+
 /* ------------------------------------------------ rich text (blok & HTML) */
 
 @layer components {

@@ -15,8 +15,9 @@ function HeadingView({ block }: { block: Extract<Block, { type: "heading" }> }) 
   const { text, level, align } = block.data;
   const cls = `font-display font-extrabold text-midnight ${align === "center" ? "text-center" : ""} ${level === 2 ? "text-4xl lg:text-5xl" : level === 3 ? "text-3xl" : "text-2xl"}`;
   return (
-    <section id={block.anchor} className="scroll-mt-24 bg-cream py-10">
+    <section id={block.anchor} className="scroll-mt-24 bg-cream py-12 lg:py-16">
       <div className="mx-auto max-w-[1360px] px-5 lg:px-10">
+        {level === 2 && <span aria-hidden className="mb-5 block h-[3px] w-12 rounded-full bg-gold" />}
         {level === 2 ? <h2 className={cls}>{text}</h2> : level === 3 ? <h3 className={cls}>{text}</h3> : <h4 className={cls}>{text}</h4>}
       </div>
     </section>
@@ -111,9 +112,9 @@ function TableView({ block }: { block: Extract<Block, { type: "table" }> }) {
 
 function EmbedView({ block }: { block: Extract<Block, { type: "embed" }> }) {
   return (
-    <section id={block.anchor} className="scroll-mt-24 bg-cream py-10">
+    <section id={block.anchor} className="scroll-mt-24 bg-cream py-12 lg:py-16">
       <div className="mx-auto max-w-[1100px] px-5 lg:px-10">
-        <iframe src={block.data.url} title={block.data.title || "Peta"} style={{ height: block.data.height }} className="w-full overflow-hidden rounded-2xl border border-midnight/10" loading="lazy" />
+        <iframe src={block.data.url} title={block.data.title || "Peta"} style={{ height: block.data.height }} className="map-frame" loading="lazy" />
       </div>
     </section>
   );
@@ -124,12 +125,12 @@ function DocLinkView({ block }: { block: Extract<Block, { type: "docLink" }> }) 
   return (
     <section id={block.anchor} className="scroll-mt-24 bg-cream py-16">
       <div className="mx-auto max-w-[1360px] px-5 lg:px-10">
-        <div className="reveal max-w-2xl">
-          {kicker && <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-leaf-600">{kicker}</span>}
-          {title && <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight text-midnight lg:text-4xl">{title}</h2>}
-          {note && <p className="mt-4 text-[15px] leading-relaxed text-midnight/70">{note}</p>}
+        <div className="reveal max-w-3xl">
+          {kicker && <span className="section-kicker kicker-rule text-leaf-600">{kicker}</span>}
+          {title && <h2 className="mt-4 font-display text-3xl font-extrabold leading-[1.08] text-midnight lg:text-[2.4rem]">{title}</h2>}
+          {note && <p className="mt-5 text-[15px] leading-relaxed text-midnight/70">{note}</p>}
         </div>
-        <ul className="mt-10 grid gap-3">
+        <ul className={`mt-10 grid gap-3 ${links.length > 5 ? "md:grid-cols-2" : ""}`}>
           {links.map((item, index) => {
             const external = /^https?:\/\//i.test(item.href);
             return (
@@ -137,7 +138,7 @@ function DocLinkView({ block }: { block: Extract<Block, { type: "docLink" }> }) 
                 <a
                   href={item.href}
                   {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className="reveal flex items-center justify-between gap-4 rounded-2xl border border-midnight/10 bg-white p-5 text-midnight transition hover:-translate-y-0.5 hover:border-midnight/30"
+                  className="reveal card card-hover group flex items-center justify-between gap-4 p-5 text-midnight"
                 >
                   <span className="min-w-0">
                     <span className="block break-words font-display text-lg font-bold">
@@ -146,7 +147,7 @@ function DocLinkView({ block }: { block: Extract<Block, { type: "docLink" }> }) 
                     </span>
                     {item.note && <span className="mt-1 block break-words text-sm text-midnight/60">{item.note}</span>}
                   </span>
-                  <span aria-hidden className="text-xl text-gold">{external ? "↗" : "→"}</span>
+                  <span aria-hidden className="link-arrow">{external ? "↗" : "→"}</span>
                 </a>
               </li>
             );
@@ -176,15 +177,21 @@ function GalleryView({ block }: { block: Extract<Block, { type: "gallery" }> }) 
   const yt = active ? youtubeId(active.image) : null;
   const ig = active ? instagramEmbed(active.image) : null;
   return (
-    <section id={block.anchor ?? "galeri"} className="scroll-mt-24 bg-cream py-16">
+    <section id={block.anchor ?? "galeri"} className="scroll-mt-24 bg-cream py-16 lg:py-24">
       <div className="mx-auto max-w-[1360px] px-5 lg:px-10">
         <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${cols}`}>
           {items.map((item, i) => (
-            <button key={`${item.image}-${i}`} onClick={() => setIndex(i)} className="group relative aspect-[4/3] overflow-hidden rounded-2xl bg-midnight/10" aria-label={item.title || item.caption || "Buka media"}>
+            <button key={`${item.image}-${i}`} onClick={() => setIndex(i)} className="group tile aspect-[4/3]" aria-label={item.title || item.caption || "Buka media"}>
               {item.thumb || (youtubeId(item.image) ? `https://i.ytimg.com/vi/${youtubeId(item.image)}/hqdefault.jpg` : null)
                 ? <DriveImage src={item.thumb || `https://i.ytimg.com/vi/${youtubeId(item.image)}/hqdefault.jpg`} alt={item.title || item.caption || ""} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                 : <DriveImage src={item.image} alt={item.title || item.caption || ""} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />}
               {item.kind === "video" && <span className="absolute inset-0 grid place-items-center"><span className="grid h-14 w-14 place-items-center rounded-full bg-gold/90 text-xl text-midnight">▶</span></span>}
+              {(item.title || item.caption) && (
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-midnight/90 via-midnight/45 to-transparent p-4 pt-12 text-left">
+                  {item.title && <span className="block font-display text-lg font-bold leading-snug text-white">{item.title}</span>}
+                  {item.caption && <span className="mt-1 block text-xs leading-snug text-white/75">{item.caption}</span>}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -213,7 +220,7 @@ function GalleryView({ block }: { block: Extract<Block, { type: "gallery" }> }) 
 export function BlockRenderer({ block, onDaftar }: { block: Block; onDaftar: Dafter }): ReactNode {
   switch (block.type) {
     case "heading": return <HeadingView block={block} />;
-    case "richText": return <section id={block.anchor} className="scroll-mt-24 bg-cream py-10"><div className="mx-auto max-w-[900px] px-5 lg:px-10"><RichTextView doc={block.data.doc} /></div></section>;
+    case "richText": return <section id={block.anchor} className="scroll-mt-24 bg-cream py-12 lg:py-16"><div className="mx-auto max-w-[900px] px-5 lg:px-10"><RichTextView doc={block.data.doc} /></div></section>;
     case "image": return <ImageView block={block} />;
     case "video": return <VideoView block={block} />;
     case "button": return <ButtonView block={block} />;
