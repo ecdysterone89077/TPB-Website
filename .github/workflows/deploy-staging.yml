@@ -38,6 +38,11 @@ jobs:
       - name: Audit credentials and environment
         run: pnpm audit:env
 
+      - name: Prisma generate
+        run: pnpm --filter @tpb/api prisma:generate
+        env:
+          DATABASE_URL: mysql://ci:ci@localhost:3306/ci_validate
+
       - name: Typecheck
         run: pnpm -r typecheck
 
