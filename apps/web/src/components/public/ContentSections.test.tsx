@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SiteContent } from "@tpb/contracts";
-import { Footer } from "./ContentSections";
+import { Footer } from "./Footer";
 
 vi.mock("../../lib/api", () => ({ api: { subscribe: vi.fn() } }));
 
