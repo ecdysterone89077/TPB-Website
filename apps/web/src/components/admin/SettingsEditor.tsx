@@ -18,13 +18,13 @@ const setIn = (obj: Record<string, unknown>, path: string, value: unknown): Reco
 const t = (key: string, label: string, extra: Partial<FieldSpec> = {}): FieldSpec => ({ key, label, kind: "text", ...extra });
 const area = (key: string, label: string, extra: Partial<FieldSpec> = {}): FieldSpec => ({ key, label, kind: "textarea", ...extra });
 const link = (key: string, label: string): FieldSpec => ({ key, label, kind: "link" });
-const listObj = (key: string, label: string, itemFields: FieldSpec[]): FieldSpec => ({ key, label, kind: "listObject", itemFields, itemLabel: "Tautan", defaultItem: () => ({ label: "Tautan baru", href: "#top" }) });
+const listObj = (key: string, label: string, itemFields: FieldSpec[], extra: Partial<FieldSpec> = {}): FieldSpec => ({ key, label, kind: "listObject", itemFields, itemLabel: "Tautan", defaultItem: () => ({ label: "Tautan baru", href: "#top" }), ...extra });
 
 const BRAND_FIELDS: FieldSpec[] = [t("brand.kicker", "Teks kecil di atas nama"), t("brand.name", "Nama instansi/prodi"), t("brand.org", "Nama universitas"), { key: "brand.logoUrl", label: "Logo", kind: "image" }];
 const LINK_FIELDS: FieldSpec[] = [link("pmbLink", "Tautan pendaftaran (PMB)")];
 const FOOTER_FIELDS: FieldSpec[] = [
   t("footer.newsletterTitle", "Judul buletin"), t("footer.submitLabel", "Tulisan tombol kirim"), t("footer.infoTitle", "Judul info kontak"), t("footer.contact.phone", "Telepon"), link("footer.contact.phoneHref", "Tautan telepon (opsional)"), t("footer.contact.email", "Email"), t("footer.contact.address", "Alamat"), area("footer.copyright", "Teks hak cipta"), t("footer.tagline", "Tagline"),
-  link("footer.socials.facebook", "Facebook"), link("footer.socials.twitter", "Twitter/X"), link("footer.socials.youtube", "YouTube"), link("footer.socials.linkedin", "LinkedIn"),
+  listObj("footer.socials", "Media sosial", [t("label", "Tulisan"), link("href", "Tautan")], { itemLabel: "Media sosial", defaultItem: () => ({ label: "Media sosial", href: "#top" }) }),
   t("footer.quickLinksTitle", "Judul tautan cepat"), listObj("footer.quickLinks", "Tautan cepat", [t("label", "Tulisan"), link("href", "Tautan")]),
 ];
 const SYSTEM_TEXT_FIELDS: FieldSpec[] = [

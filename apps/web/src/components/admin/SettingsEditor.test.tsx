@@ -39,7 +39,7 @@ const settingsFixture = (texts?: Settings["texts"]): Settings => ({
   pmbLink: "#pmb",
   footer: {
     newsletterTitle: "N", infoTitle: "I", quickLinksTitle: "T", galleryTitle: "G", submitLabel: "Kirim",
-    socials: { facebook: "", twitter: "", youtube: "", linkedin: "" },
+    socials: [],
     contact: { phone: "", email: "a@b.test", address: "Purwokerto" },
     quickLinks: [], copyright: "", tagline: "",
   },

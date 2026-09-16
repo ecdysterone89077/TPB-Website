@@ -5,7 +5,7 @@ const heading = (text: string) => ({ type: "heading", data: { text, level: 2, al
 const heroFixture = { badge: "", line1: "a", highlight: "b", line2: "c", subtitle: "", primaryLabel: "Daftar", primaryHref: "#pmb", secondaryLabel: "", image: "" };
 const footerFixture = {
   newsletterTitle: "", infoTitle: "", quickLinksTitle: "", galleryTitle: "", submitLabel: "",
-  socials: { facebook: "", twitter: "", youtube: "", linkedin: "" },
+  socials: [],
   contact: { phone: "", email: "a@b.test", address: "" },
   quickLinks: [], copyright: "", tagline: "",
 };
@@ -77,7 +77,7 @@ describe("validasi tautan blok", () => {
     expect(HeroSchema.safeParse({ ...heroFixture, primaryHref: "#pmb", secondaryHref: "https://tpb.test" }).success).toBe(true);
     expect(CtaSchema.safeParse({ title: "T", body: "B", primary: "P", secondary: "S", secondaryHref: "javascript:alert(1)" }).success).toBe(false);
     expect(FooterSchema.safeParse({ ...footerFixture, quickLinks: [{ label: "X", href: "javascript:alert(1)" }] }).success).toBe(false);
-    expect(FooterSchema.safeParse({ ...footerFixture, socials: { ...footerFixture.socials, facebook: "javascript:alert(1)" } }).success).toBe(false);
+    expect(FooterSchema.safeParse({ ...footerFixture, socials: [{ label: "Facebook", href: "javascript:alert(1)" }] }).success).toBe(false);
     expect(SiteContentSchema.shape.pmbLink.safeParse("javascript:alert(1)").success).toBe(false);
     expect(SiteContentSchema.shape.pmbLink.safeParse("https://pmb.tpb.test").success).toBe(true);
   });
@@ -141,13 +141,43 @@ describe("blok docLink", () => {
   });
 });
 
+describe("footer.socials", () => {
+  it("menerima daftar media sosial berlabel", () => {
+    const parsed = FooterSchema.parse({
+      ...footerFixture,
+      socials: [
+        { label: "Instagram TPB UNU Purwokerto", href: "https://www.instagram.com/tpb_unupurwokerto/" },
+        { label: "Instagram HIMATETA", href: "https://www.instagram.com/himateta.unupwt/" },
+      ],
+    });
+    expect(parsed.socials.map((item) => item.label)).toEqual(["Instagram TPB UNU Purwokerto", "Instagram HIMATETA"]);
+    expect(parsed.socials[1].href).toBe("https://www.instagram.com/himateta.unupwt/");
+  });
+
+  it("mengubah bentuk lama facebook/twitter/youtube/linkedin menjadi daftar", () => {
+    const parsed = FooterSchema.parse({ ...footerFixture, socials: { facebook: "https://www.facebook.com/x", twitter: "", youtube: "https://www.youtube.com/@x", linkedin: "" } });
+    expect(parsed.socials).toEqual([
+      { label: "Facebook", href: "https://www.facebook.com/x" },
+      { label: "YouTube", href: "https://www.youtube.com/@x" },
+    ]);
+    expect(FooterSchema.parse({ ...footerFixture, socials: { tiktok: "https://www.tiktok.com/@x" } }).socials).toEqual([{ label: "tiktok", href: "https://www.tiktok.com/@x" }]);
+  });
+
+  it("tanpa socials menjadi daftar kosong; label kosong dan bentuk tidak dikenal ditolak", () => {
+    expect(FooterSchema.parse({ ...footerFixture, socials: undefined }).socials).toEqual([]);
+    expect(FooterSchema.safeParse({ ...footerFixture, socials: [{ label: "", href: "https://tpb.test" }] }).success).toBe(false);
+    expect(FooterSchema.safeParse({ ...footerFixture, socials: [{ label: "X", href: "#top" }] }).success).toBe(true);
+    expect(FooterSchema.safeParse({ ...footerFixture, socials: "bukan-array" }).success).toBe(false);
+  });
+});
+
 describe("SiteSettingsSchema texts", () => {
   const base = {
     brand: { kicker: "", name: "TPB", org: "UNU", logoUrl: "" },
     pmbLink: "#pmb",
     footer: {
       newsletterTitle: "N", infoTitle: "I", quickLinksTitle: "T", galleryTitle: "G", submitLabel: "Kirim",
-      socials: { facebook: "", twitter: "", youtube: "", linkedin: "" },
+      socials: [],
       contact: { phone: "", email: "a@b.test", address: "Purwokerto" },
       quickLinks: [], copyright: "", tagline: "",
     },

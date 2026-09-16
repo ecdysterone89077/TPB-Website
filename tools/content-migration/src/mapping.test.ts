@@ -6,7 +6,7 @@ const hero = { badge: "Uji", line1: "Satu", highlight: "Dua", line2: "Tiga", sub
 const brand = { kicker: "K", name: "TPB Uji", org: "UNU", logoUrl: "/media/logo.png" };
 const footer = {
   newsletterTitle: "N", infoTitle: "I", quickLinksTitle: "T", galleryTitle: "G", submitLabel: "Kirim",
-  socials: { facebook: "", twitter: "", youtube: "", linkedin: "" },
+  socials: [],
   contact: { phone: "", email: "a@b.test", address: "Purwokerto" },
   quickLinks: [], copyright: "C", tagline: "T",
 };
