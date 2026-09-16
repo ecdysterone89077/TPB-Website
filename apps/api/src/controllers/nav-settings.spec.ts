@@ -45,7 +45,7 @@ describe("SettingsController", () => {
     pmbLink: "#pmb",
     footer: {
       newsletterTitle: "Newsletter", infoTitle: "Info", quickLinksTitle: "Tautan", galleryTitle: "Galeri", submitLabel: "Kirim",
-      socials: { facebook: "", twitter: "", youtube: "", linkedin: "" },
+      socials: [],
       contact: { phone: "", email: "a@b.test", address: "Purwokerto" },
       quickLinks: [], copyright: "", tagline: "",
     },

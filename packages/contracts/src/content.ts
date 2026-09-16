@@ -196,6 +196,23 @@ const KickerTitleSchema = z.object({ kicker: z.string().max(300), title: z.strin
 const TextListSchema = z.array(z.string().max(500)).max(100);
 const MetricSchema = z.object({ v: z.string().max(100), l: z.string().max(200) });
 
+/* Media sosial footer: daftar label+tautan; bentuk lama (objek 4 kanal) tetap dinormalkan dengan urutan tetap. */
+const SocialLinkSchema = z.object({
+  label: z.string().trim().min(1).max(200),
+  href: SafeHrefSchema,
+});
+
+const LEGACY_SOCIAL_KEYS = ["facebook", "twitter", "youtube", "linkedin"];
+const LEGACY_SOCIAL_LABELS: Record<string, string> = { facebook: "Facebook", twitter: "Twitter", youtube: "YouTube", linkedin: "LinkedIn" };
+const normalizeSocials = (value: unknown): unknown => {
+  if (!value || Array.isArray(value) || typeof value !== "object") return value;
+  const record = value as Record<string, unknown>;
+  const keys = [...LEGACY_SOCIAL_KEYS, ...Object.keys(record).filter((key) => !LEGACY_SOCIAL_KEYS.includes(key))];
+  return keys
+    .filter((key) => record[key] !== undefined && !(typeof record[key] === "string" && (record[key] as string).trim() === ""))
+    .map((key) => ({ label: LEGACY_SOCIAL_LABELS[key] ?? key, href: record[key] }));
+};
+
 export const SiteContentSchema = z.object({
   navigation: z.array(NavItemSchema).max(30),
   brand: z.object({ kicker: z.string().max(160), name: z.string().max(220), org: z.string().max(220), logoUrl: ImageSchema }),
@@ -215,7 +232,7 @@ export const SiteContentSchema = z.object({
   kemahasiswaan: z.object({ himpunan: z.object({ kicker: z.string().max(300), title: z.string().max(500), intro: z.string().max(5000), divisi: TextListSchema }), beasiswa: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: z.array(z.object({ name: z.string().max(300), body: z.string().max(3000) })).max(100) }), prestasi: z.object({ kicker: z.string().max(300), title: z.string().max(500), items: TextListSchema }), alumni: z.object({ kicker: z.string().max(300), title: z.string().max(500), quote: z.string().max(5000), name: z.string().max(200), role: z.string().max(200), stats: z.array(MetricSchema).max(50) }) }),
   news: KickerTitleSchema,
   cta: z.object({ title: z.string().max(500), body: z.string().max(3000), primary: z.string().max(160), secondary: z.string().max(160), secondaryHref: SafeHrefOrEmptySchema }),
-  footer: z.object({ newsletterTitle: z.string().max(500), infoTitle: z.string().max(200), quickLinksTitle: z.string().max(200), galleryTitle: z.string().max(200), submitLabel: z.string().max(80), socials: z.object({ facebook: SafeHrefOrEmptySchema, twitter: SafeHrefOrEmptySchema, youtube: SafeHrefOrEmptySchema, linkedin: SafeHrefOrEmptySchema }), contact: z.object({ phone: z.string().max(100), phoneHref: SafeHrefOrEmptySchema.optional(), email: z.string().max(320), address: z.string().max(1000) }), quickLinks: z.array(z.object({ label: z.string().max(200), href: SafeHrefOrEmptySchema })).max(100), copyright: z.string().max(500), tagline: z.string().max(500) }),
+  footer: z.object({ newsletterTitle: z.string().max(500), infoTitle: z.string().max(200), quickLinksTitle: z.string().max(200), galleryTitle: z.string().max(200), submitLabel: z.string().max(80), socials: z.preprocess(normalizeSocials, z.array(SocialLinkSchema).max(10).default([])), contact: z.object({ phone: z.string().max(100), phoneHref: SafeHrefOrEmptySchema.optional(), email: z.string().max(320), address: z.string().max(1000) }), quickLinks: z.array(z.object({ label: z.string().max(200), href: SafeHrefOrEmptySchema })).max(100), copyright: z.string().max(500), tagline: z.string().max(500) }),
 });
 export type ValidatedSiteContent = z.infer<typeof SiteContentSchema>;
 

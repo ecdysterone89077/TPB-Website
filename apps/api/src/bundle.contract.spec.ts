@@ -5,7 +5,7 @@ const settings = {
   pmbLink: "#pmb",
   footer: {
     newsletterTitle: "N", infoTitle: "I", quickLinksTitle: "T", galleryTitle: "G", submitLabel: "Kirim",
-    socials: { facebook: "", twitter: "", youtube: "", linkedin: "" },
+    socials: [],
     contact: { phone: "", email: "a@b.test", address: "" },
     quickLinks: [], copyright: "", tagline: "",
   },
@@ -46,6 +46,12 @@ describe("SiteBundleSchema", () => {
 
   it("settings boleh null (tanpa fallback)", () => {
     expect(SiteBundleSchema.parse(bundle({ settings: null })).settings).toBeNull();
+  });
+
+  it("bundel lama dengan socials berbentuk objek tetap diterima dan dinormalkan", () => {
+    const legacy = { ...settings, footer: { ...settings.footer, socials: { facebook: "https://www.facebook.com/x", twitter: "", youtube: "", linkedin: "" } } };
+    const parsed = SiteBundleSchema.parse(bundle({ settings: legacy }));
+    expect(parsed.settings?.footer.socials).toEqual([{ label: "Facebook", href: "https://www.facebook.com/x" }]);
   });
 
   it("menolak versi tak dikenal dan tanggal tidak valid", () => {
